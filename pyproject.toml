@@ -11,6 +11,10 @@ dependencies = [
     "httpx (>=0.28.1,<0.29.0)",
 ]
 
+[tool.poetry]
+# Stops dir having to match project name
+package-mode = false
+
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
