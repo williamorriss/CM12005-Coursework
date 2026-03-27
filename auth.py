@@ -1,16 +1,22 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
-
-from fastapi import APIRouter, Request, Depends
+import aiosqlite
+from fastapi import APIRouter, Depends
 from extract import *
 import jwt
 import base64
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 import xml.etree.ElementTree as ET
 from fastapi import HTTPException
 import httpx
+from pydantic import BaseModel
+from datetime import datetime, timedelta, timezone
 
 router = APIRouter(prefix="/auth")
+
+class UserSession(BaseModel):
+    user_id: int
+    username: str
 
 @router.get("/login")
 async def login(
@@ -18,7 +24,7 @@ async def login(
     origin: str = Depends(get_origin),
     cas_origin: str = Depends(get_cas_origin),
     allowed_origins: list[str] = Depends(get_allowed_origins),
-):
+) -> RedirectResponse:
     try:
         redirect_url = httpx.URL(redirect)
         if strip_origin(redirect_url) not in allowed_origins:
@@ -38,11 +44,10 @@ async def login(
     )
 
 @router.get("/logout")
-async def logout(cas_origin: str = Depends(get_cas_origin)):
-    # Redirects to CAS logout page.
-    # Unfortunately it does not seem like Bath CAS implements the
-    # return link so you will stranded on the logout page
-    return RedirectResponse(url=f"{cas_origin}/logout", status_code=303)
+async def logout(cas_origin: str = Depends(get_cas_origin)) -> RedirectResponse:
+    response = RedirectResponse(url=f"{cas_origin}/logout", status_code=303)
+    response.delete_cookie("auth-token")
+    return response
 
 @router.get("/cas/{redirect64}")
 async def cas_callback(
@@ -52,7 +57,8 @@ async def cas_callback(
     origin: str = Depends(get_origin),
     cas_origin: str = Depends(get_cas_origin),
     db: Connection = Depends(get_db),
-):
+    auth_key = Depends(get_auth_key)
+) -> RedirectResponse:
     try:
         redirect_url = base64.urlsafe_b64decode(redirect64).decode("utf-8")
         redirect = httpx.URL(redirect_url)
@@ -67,10 +73,21 @@ async def cas_callback(
             if (user_id := await create_user(db, username)) is None:
                 raise HTTPException(status_code=500, detail="Failed to create new user")
 
-        token = jwt.encode({user_id: user_id}, key="PleaseChangeLater", algorithm="HS256")
+        expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        token = jwt.encode(
+            {"user_id": user_id, "exp" : int(expires.timestamp())},
+            key=auth_key,
+            algorithm="HS256"
+        )
 
         response = RedirectResponse(url=redirect, status_code=302)
-        response.set_cookie(key="auth-token", httponly=True, value=token,)
+        response.set_cookie(
+            key="auth-token",
+            httponly=True,
+            value=token,
+            samesite="strict",
+            expires=expires
+        )
 
         return response
 
@@ -92,24 +109,55 @@ async def get_username(
         service = f"{origin}/auth/cas/{redirect64}"
         response = await cas_client.get(f"/serviceValidate?service={service}&ticket={ticket}")
 
-    namespace = {"cas": "http://www.yale.edu/tp/cas"}
+    namespaces = {"cas": "http://www.yale.edu/tp/cas"}
     try:
         root = ET.fromstring(response.text)
     except ET.ParseError:
         raise HTTPException(status_code=502, detail="Bad CAS response")
 
-    if (failure := root.find("cas:authenticationFailure", namespace)) is not None:
-        error = failure.findtext("cas:message", namespaces=namespace)
+    if (failure := root.find("cas:authenticationFailure", namespaces)) is not None:
+        error = failure.findtext("cas:message", namespaces=namespaces)
         print(error)
         raise HTTPException(status_code=401, detail="Failed to authenticate")
 
-    if (success := root.find("cas:authenticationSuccess", namespace)) is None:
+    if (success := root.find("cas:authenticationSuccess", namespaces)) is None:
         raise HTTPException(status_code=500, detail="No CAS response")
 
-    if (user := success.findtext("cas:user", namespaces=namespace) ) is None:
+    if (user := success.findtext("cas:user", namespaces=namespaces) ) is None:
         raise HTTPException(status_code=500, detail="Server error whilst parsing CAS response")
 
     return user
+
+@router.get("/session", response_model=UserSession)
+async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSession:
+    async with db.execute("SELECT username FROM users WHERE id = ?", (user_id,)) as cursor:
+        row = await cursor.fetchone()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    username = row[0]
+    return UserSession(user_id=user_id, username=username)
+
+@router.get("/refresh")
+async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = Depends(authorize)) -> Response:
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    token = jwt.encode(
+        {"user_id": user_id, "exp" : int(expires.timestamp())},
+        key=auth_key,
+        algorithm="HS256"
+    )
+
+    response = Response(status_code=200)
+    response.set_cookie(
+        key="auth-token",
+        httponly=True,
+        value=token,
+        samesite="strict",
+        expires=expires
+    )
+
+    return response
 
 async def get_user_id(db: Connection, username: str) -> int | None:
     async with db.execute(
@@ -120,13 +168,9 @@ async def get_user_id(db: Connection, username: str) -> int | None:
         return row[0] if row else None
 
 async def create_user(db: Connection, username: str) -> int | None:
-    cursor = await db.execute(
-        "INSERT INTO users (username) VALUES (?)",
-        (username,)
-    )
-    await db.commit()
-    return cursor.lastrowid
-
+    async with db.execute("INSERT INTO users (username) VALUES (?)", (username,)) as cursor:
+        await db.commit()
+        return cursor.lastrowid
 
 def strip_origin(url: httpx.URL) -> str:
     return str(url.join('/')).rstrip('/')
