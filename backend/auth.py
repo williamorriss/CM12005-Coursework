@@ -1,5 +1,6 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
+import aiosqlite
 from fastapi import APIRouter, Depends
 from extract import *
 import jwt
@@ -36,7 +37,7 @@ async def login(
     # redirect url treated as a resource to avoid complications with cas adding queries
     # whilst still wanting an exact url ( just trust me )
     # Base64 is used to avoid annoying http url escaping
-    callback = f"{origin}/auth/cas/{redirect64}"
+    callback = f"{origin}/api/auth/cas/{redirect64}"
     return RedirectResponse(
         url=f"{cas_origin}/login?service={callback}",
         status_code=303
@@ -87,7 +88,6 @@ async def cas_callback(
             secure=False,    # set true if deploying
             samesite="lax",
             expires=expires,
-            path="/",
         )
 
         return response
@@ -107,7 +107,7 @@ async def get_username(
     cas_origin: str
 ) -> str:
     async with httpx.AsyncClient(base_url=cas_origin) as cas_client:
-        service = f"{origin}/auth/cas/{redirect64}"
+        service = f"{origin}/api/auth/cas/{redirect64}"
         response = await cas_client.get(f"/serviceValidate?service={service}&ticket={ticket}")
 
     namespaces = {"cas": "http://www.yale.edu/tp/cas"}
@@ -157,10 +157,28 @@ async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = De
         secure=False,    # set true if deploying
         samesite="lax",
         expires=expires,
-        path="/",
     )
 
     return response
+
+@router.get("/delete")
+async def delete_user(
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db),
+    cas_origin: str = Depends(get_cas_origin)
+) -> RedirectResponse:
+    try:
+        async with db.execute("DELETE FROM users WHERE id = ?",(user_id,)) as cursor:
+            await db.commit()
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="User not found")
+
+        response = RedirectResponse(url=f"{cas_origin}/logout", status_code=303)
+        response.delete_cookie("auth-token")
+        return response
+
+    except aiosqlite.OperationalError:
+        raise HTTPException(status_code=500, detail="Server error")
 
 async def get_user_id(db: Connection, username: str) -> int | None:
     async with db.execute(
