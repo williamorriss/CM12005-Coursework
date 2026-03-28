@@ -22,7 +22,7 @@ app.state.ORIGIN = ORIGIN
 app.state.CAS_ORIGIN = CAS_ORIGIN
 app.state.KEY = "testkeybpfdgsfgoiabegoabgongebiagiaebgaobxxxxxegiobaeogbieaosbget"
 app.state.ALLOWED_ORIGINS = [app.state.ORIGIN, DEV_SERVER]
-app.include_router(auth_router)
+app.include_router(auth_router, prefix="/api")
 
 @app.get("/")
 async def index():
