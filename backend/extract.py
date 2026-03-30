@@ -5,11 +5,16 @@ from fastapi import Request, HTTPException
 from aiosqlite import Connection, connect
 import jwt
 
+<<<<<<< HEAD
 
 DBNAME = "test.db"
 
 async def get_db(_r: Request) -> AsyncGenerator[Connection, Any]:
     async with connect(DBNAME) as db:
+=======
+async def get_db(_r: Request) -> AsyncGenerator[Connection, Any]:
+    async with connect("test.db") as db:
+>>>>>>> 493abd69289deaa3f726bd9aee50dfbbe3d29d8b
         yield db
 
 def get_allowed_origins(request: Request) -> list[str]:

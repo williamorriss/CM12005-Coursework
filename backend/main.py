@@ -1,4 +1,5 @@
 from fastapi.responses import FileResponse
+<<<<<<< HEAD
 from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -8,10 +9,17 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from extract import DBNAME
 
+=======
+from fastapi import FastAPI
+from auth import router as auth_router
+from fastapi.middleware.cors import CORSMiddleware
+
+>>>>>>> 493abd69289deaa3f726bd9aee50dfbbe3d29d8b
 DEV_SERVER = "http://localhost:5173"
 ORIGIN = "http://localhost:8000"
 CAS_ORIGIN = "https://auth.bath.ac.uk"
 
+<<<<<<< HEAD
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     import os
@@ -35,6 +43,9 @@ async def lifespan(_app: FastAPI):
     yield
 
 app = FastAPI(lifespan=lifespan)
+=======
+app = FastAPI()
+>>>>>>> 493abd69289deaa3f726bd9aee50dfbbe3d29d8b
 
 app.add_middleware(
     CORSMiddleware, # type: ignore
@@ -53,4 +64,9 @@ app.include_router(auth_router, prefix="/api")
 
 @app.get("/")
 async def index():
+<<<<<<< HEAD
     return FileResponse("index.html")
+=======
+    return FileResponse("index.html")
+
+>>>>>>> 493abd69289deaa3f726bd9aee50dfbbe3d29d8b
