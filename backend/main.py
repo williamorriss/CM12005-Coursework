@@ -1,12 +1,12 @@
 from fastapi.responses import FileResponse
-from fastapi import FastAPI
 from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
-from extract import get_db
+
 import aiosqlite
 from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from extract import DBNAME
 
 DEV_SERVER = "http://localhost:5173"
 ORIGIN = "http://localhost:8000"
@@ -14,18 +14,24 @@ CAS_ORIGIN = "https://auth.bath.ac.uk"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    db: aiosqlite.Connection = await anext(get_db())
-    schema_file = Path("schema.sql")
+    import os
+    print(os.getcwd())
 
-    if not schema_file.exists():
-        raise FileNotFoundError(f"Schema file not found")
+    try:
+        with open("backend/schema.sql", 'r') as schema_file:
+            schema_sql = schema_file.read()
+            async with aiosqlite.connect(DBNAME) as db:
+                await db.executescript(schema_sql)
+                await db.commit()
+                print(f"Schema applied")
+    except FileNotFoundError:
+        with open("schema.sql", 'r') as schema_file:
+            schema_sql = schema_file.read()
+            async with aiosqlite.connect(DBNAME) as db:
+                await db.executescript(schema_sql)
+                await db.commit()
+                print(f"Schema applied")
 
-    schema_sql = schema_file.read_text(encoding="utf-8")
-
-    async with db.executescript(schema_sql):
-        await db.executescript(schema_sql)
-        await db.commit()
-        print(f"✅ Schema applied successfully to")
     yield
 
 app = FastAPI(lifespan=lifespan)
@@ -48,4 +54,3 @@ app.include_router(auth_router, prefix="/api")
 @app.get("/")
 async def index():
     return FileResponse("index.html")
-
