@@ -48,3 +48,4 @@ app.include_router(auth_router, prefix="/api")
 @app.get("/")
 async def index():
     return FileResponse("index.html")
+
