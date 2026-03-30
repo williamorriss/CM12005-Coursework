@@ -1,30 +1,34 @@
-Repo for [CM12005 group project coursework](https://moodle.bath.ac.uk/mod/assign/view.php?id=1552525).
-
+Repo for CM12005 group project coursework.
 Currently using [poetry](https://python-poetry.org/) for dependency management.
+
+# Running backend
+(In /backend)
 ****
 install deps:
 ```bash
 poetry install
 ```
 
-Without activating environment:
+## Without activating environment:
 ```bash
-poetry run fastapi dev
+poetry run fastapi dev --host localhost
 ```
 
-# With Environment
-## Windows
+## With Environment
+### Windows
 ```bash
 (poetry env info --path)\Scripts\activate 
 fastapi dev
 ```
 
-## Mac
+### Mac
 ```bash
 source $(poetry env info --path)/bin/activate
-fastapi dev
+fastapi dev --host localhost
 ```
 
-But we should probably just all agree on a version to use.
-(currently on latest version (3.14.3)
-Repo for [CM12005 group project coursework](https://moodle.bath.ac.uk/mod/assign/view.php?id=1552525).
+# Running Frontend
+(In /frontend)
+```bash
+npm run dev
+```
