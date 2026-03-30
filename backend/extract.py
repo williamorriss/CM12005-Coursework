@@ -5,7 +5,7 @@ from fastapi import Request, HTTPException
 from aiosqlite import Connection, connect
 import jwt
 
-async def get_db(_r: Request) -> AsyncGenerator[Connection, Any]:
+async def get_db(_r: Request | None = None) -> AsyncGenerator[Connection, Any]:
     async with connect("test.db") as db:
         yield db
 
