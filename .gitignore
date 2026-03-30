@@ -200,3 +200,6 @@ pnpm-debug.log*
 .history/
 
 *.tsbuildinfo
+
+.db
+.sqlite
