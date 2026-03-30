@@ -7,14 +7,22 @@ install deps:
 poetry install
 ```
 
-run:
+Without activating environment:
 ```bash
+poetry run fastapi dev
+```
+
+# With Environment
+## Windows
+```bash
+(poetry env info --path)\Scripts\activate 
 fastapi dev
 ```
 
-If you are using a different version of python then:
+## Mac
 ```bash
-poetry run fastapi dev
+source $(poetry env info --path)/bin/activate
+fastapi dev
 ```
 
 But we should probably just all agree on a version to use.
