@@ -3,7 +3,7 @@
   padding: 5px 10px;
   border-radius: 5px;
   color: var(--accent);
-  background: rgba(34, 197, 94, 0.2); /* Semi-transparent green (20% opacity) */
+  background: rgba(34, 197, 94, 0.2);
   border: 2px solid transparent;
   transition: border-color 0.3s;
   margin-bottom: 24px;

@@ -5,9 +5,11 @@ export type NoteEntry = [string, string];
 export type NoteEntries = NoteEntry[];
 
 export function Notes({notes}: {notes: NoteEntries}) {
+    // States
     const [newNote, setNewNote] = useState("");
     const [currentNotes, setCurrentNotes] = useState<NoteEntries>(notes);
 
+    // Get dates
     const getCurrentDate = () => {
         const now = new Date();
         const year = now.getFullYear();
@@ -15,7 +17,6 @@ export function Notes({notes}: {notes: NoteEntries}) {
         const day = String(now.getDate()).padStart(2, '0');
         return `${day}/${month}/${year}`;
     }
-
     const getCurrentTime = () => {
         const now = new Date();
         const hours = String(now.getHours()).padStart(2, '0');
@@ -30,6 +31,7 @@ export function Notes({notes}: {notes: NoteEntries}) {
     }
 
     const addNote = async () => {
+        // Checks to see if new note is empty
         if(!newNote.trim()){
             return;
         }
@@ -49,6 +51,7 @@ export function Notes({notes}: {notes: NoteEntries}) {
         }
     }
 
+    // Add note on enter
     const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
@@ -56,6 +59,7 @@ export function Notes({notes}: {notes: NoteEntries}) {
         }
     };
 
+    // Displaying each note in the list as a div
     const noteList = currentNotes.map((note, index) => {
         return (
             <div key={index} style={{marginBottom: "12px", textAlign: "left"}}>
