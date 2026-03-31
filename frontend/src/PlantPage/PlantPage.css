@@ -48,6 +48,7 @@
   max-height: 400px;
   margin: 0;
   background: transparent;
+  height: 300px;
 }
 
 .note-input-container {
