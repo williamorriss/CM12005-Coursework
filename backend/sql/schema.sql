@@ -37,5 +37,7 @@ CREATE TABLE IF NOT EXISTS Logs (
     PlantID INTEGER NOT NULL,
     Temperature FLOAT,
     PH FLOAT,
+    CollectedTimestamp TIMESTAMP NOT NULL,
+    InsertTimestamp TIMESTAMP DEFAULT (DATETIME('now')) NOT NULL,
     FOREIGN KEY (PlantID) REFERENCES Plants(ID)
 );

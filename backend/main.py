@@ -6,6 +6,7 @@ from extract import DBNAME
 from fastapi import FastAPI
 from auth import router as auth_router
 from fastapi.middleware.cors import CORSMiddleware
+from physical.testsensor import TestSensor
 
 DEV_SERVER = "http://localhost:5173"
 ORIGIN = "http://localhost:8000"
@@ -13,25 +14,24 @@ CAS_ORIGIN = "https://auth.bath.ac.uk"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
-    try:
-        with open("backend/sql/schema.sql", 'r') as schema_file:
-            schema_sql = schema_file.read()
-            async with aiosqlite.connect(DBNAME) as db:
-                await db.executescript(schema_sql)
-                await db.commit()
-                print(f"Schema applied")
-    except FileNotFoundError:
-        with open("sql/schema.sql", 'r') as schema_file:
-            schema_sql = schema_file.read()
-            async with aiosqlite.connect(DBNAME) as db:
-                await db.executescript(schema_sql)
-                await db.commit()
-                print(f"Schema applied")
+    test_sensor = TestSensor(plant_id=0)
+    test_sensor.start()
 
+    await init_db()
     yield
 
-app = FastAPI(lifespan=lifespan)
+async def init_db():
+    with open("sql/schema.sql", 'r') as schema_file:
+        schema_sql = schema_file.read()
+        async with aiosqlite.connect(DBNAME) as db:
+            await db.execute("PRAGMA journal_mode=WAL") # Write Ahead Log for concurrent read/ writes
+            await db.execute("PRAGMA busy_timeout=1000")
+            await db.execute("PRAGMA synchronous=NORMAL")
+            await db.executescript(schema_sql)
+            await db.commit()
+            print(f"Schema applied")
 
+app = FastAPI(lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware, # type: ignore
     allow_origins=[DEV_SERVER],
