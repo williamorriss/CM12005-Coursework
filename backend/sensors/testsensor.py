@@ -5,8 +5,8 @@ from collections import namedtuple
 import multiprocessing
 import asyncio
 import aiosqlite
-
-from extract import DBNAME
+from logs.sensor import Sensor
+from db import DBNAME
 
 TestSample = namedtuple("TestSample", ["temperature", "pH", "timestamp"])
 
@@ -15,8 +15,11 @@ def fake_sample() -> TestSample:
     ph = randrange(0, 14)
     return TestSample(temperature, ph, datetime.now())
 
-class TestSensor:
-    def __init__(self, plant_id: int):
+class TestSensor(Sensor):
+    def __init__(self, sensor_id: int, plant_id: int, name: str):
+        self.name = name
+        self.sensor_id = sensor_id
+        self.plant_id = plant_id
         self.aggregate_delay = timedelta(minutes=1)
         self.plant_id = plant_id
         self._stop_event = multiprocessing.Event()
@@ -28,6 +31,12 @@ class TestSensor:
     def stop(self):
         self._stop_event.set()
 
+    def is_running(self) -> bool:
+        return not self._stop_event.is_set()
+
+    def set_target(self, plant_id: int):
+        self.plant_id = plant_id
+
     def _run(self):
         asyncio.run(self._process())
 
@@ -35,7 +44,7 @@ class TestSensor:
         samples = []
         next_write = datetime.now() + self.aggregate_delay
 
-        while not self._stop_event.is_set():
+        while self.is_running():
             if datetime.now() > next_write:
                 if samples:
                     await self._db_writer(np.array(samples))

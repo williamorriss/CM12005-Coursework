@@ -1,0 +1,132 @@
+from abc import ABC, abstractmethod
+
+from pydantic import BaseModel
+
+
+from aiosqlite import Connection, Row
+from db import get_db
+from fastapi import APIRouter, Depends
+from auth import authorize
+from fastapi.responses import RedirectResponse, Response
+from fastapi import HTTPException
+import httpx
+from fastapi.requests import Request
+
+
+from sensors.testsensor import TestSensor
+
+router = APIRouter(prefix="/sensors")
+
+def get_sensors(request: Request) -> dict[int, Sensor]:
+    return request.app.state.sensors
+
+class Sensor(ABC):
+
+    @abstractmethod
+    def start(self):
+        pass
+
+    @abstractmethod
+    def stop(self):
+        pass
+
+    @abstractmethod
+    def is_running(self) -> bool:
+        pass
+
+    @abstractmethod
+    def set_target(self, plant_id: int):
+        pass
+
+
+class SensorView(BaseModel):
+    sensor_id: int
+    plant_id: int
+    name: str
+
+    @staticmethod
+    def from_row(row: Row) -> "SensorView":
+        sensor_id = row["id"]
+        name = row["name"]
+        plant_id = row["plant_id"]
+        return SensorView(sensor_id=sensor_id, name=name, plant_id=plant_id)
+
+@router.post("/sensors/{sensor_id}/session")
+async def activate_sensor(
+    sensor_id: int,
+    user_id = Depends(authorize), # authorized endpoint
+    sensors: Sensor = Depends(get_sensors),
+    db: Connection = Depends(get_db),
+):
+    if sensor_id in sensors:
+        # already running
+        sensors[sensor_id].start()
+        return
+
+    async with db.execute("""
+        SELECT PlantID, Name FROM Sensors WHERE ID = ? 
+    """, (sensor_id,)) as cursor:
+        row = cursor.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Sensor not found")
+
+        sensors[sensor_id] = TestSensor(
+            user_id=user_id,
+            plant_id=row["plant_id"],
+            sensor_id=sensor_id,
+            name=row["name"]
+        )
+        sensors[sensor_id].start()
+
+
+@router.delete("/sensors/{sensor_id}/session")
+async def deactivate_sensor(
+    _user_id = Depends(authorize), # authorized endpoint
+    sensor_id = int,
+    sensors: Sensor = Depends(get_sensors),
+):
+    if sensor_id in sensors:
+        sensors[sensor_id].stop()
+
+    raise HTTPException(status_code=404, detail="Sensor not found")
+
+@router.post("/sensors")
+async def add_sensor (
+    name: str,
+    user_id: int = Depends(authorize), # authorized endpoint
+    plant_id: int | None = None,
+    db: Connection = Depends(get_db),
+):
+    async with db.execute_insert("""
+        INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)
+    """, (user_id, plant_id, name)):
+        await db.commit()
+
+@router.delete("/sensors/{sensor_id}")
+async def add_sensor (
+    sensor_id: int,
+    db: Connection = Depends(get_db),
+):
+    async with db.execute("""
+         DELETE FROM Sensors WHERE ID = ? 
+    """, (sensor_id,)) :
+        await db.commit()
+
+@router.patch("/sensors/{sensor_id}")
+async def update_sensor(
+    sensor_id: int,
+    plant_id: int | None = None,
+    name: str | None = None,
+    db: Connection = Depends(get_db),
+):
+    if plant_id:
+        await db.execute("""
+            UPDATE Sensors SET PlantID = ? WHERE ID = ?
+        """, (plant_id, sensor_id))
+
+    if name:
+        await db.execute("""
+            UPDATE Sensors SET Name = ? WHERE ID = ?
+        """, (name, sensor_id))
+
+    await db.commit()

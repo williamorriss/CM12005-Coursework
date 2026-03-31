@@ -1,8 +1,8 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
 import aiosqlite
+from fastapi.requests import Request
 from fastapi import APIRouter, Depends
-from extract import *
 import jwt
 import base64
 from fastapi.responses import RedirectResponse, Response
@@ -18,7 +18,41 @@ class UserSession(BaseModel):
     user_id: int
     username: str
 
-@router.get("/login")
+
+# extractors
+def get_allowed_origins(request: Request) -> list[str]:
+    return request.app.state.ALLOWED_ORIGINS
+
+def get_cas_origin(request: Request) -> str:
+    return request.app.state.CAS_ORIGIN
+
+def get_origin(request: Request) -> str:
+    return request.app.state.ORIGIN
+
+def get_auth_key(request: Request) -> str:
+    return request.app.state.KEY
+
+def authorize(request: Request) -> int:
+    auth_token = request.cookies.get("auth-token")
+    if auth_token is None:
+        raise HTTPException(status_code=401, detail="No auth token")
+
+    try:
+        claims = jwt.decode(
+            jwt=auth_token,
+            key=get_auth_key(request),
+            algorithms=["HS256"],
+        )
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Expired token")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid auth token")
+
+    return claims["user_id"]
+
+# endpoints
+
+@router.get("/login", response_class=RedirectResponse)
 async def login(
     redirect: str,
     origin: str = Depends(get_origin),
@@ -40,16 +74,16 @@ async def login(
     callback = f"{origin}/api/auth/cas/{redirect64}"
     return RedirectResponse(
         url=f"{cas_origin}/login?service={callback}",
-        status_code=303
+        status_code=302
     )
 
-@router.get("/logout")
+@router.get("/logout", response_class=RedirectResponse)
 async def logout(cas_origin: str = Depends(get_cas_origin)) -> RedirectResponse:
-    response = RedirectResponse(url=f"{cas_origin}/logout", status_code=303)
+    response = RedirectResponse(url=f"{cas_origin}/logout", status_code=302)
     response.delete_cookie("auth-token")
     return response
 
-@router.get("/cas/{redirect64}")
+@router.get("/cas/{redirect64}", response_class=RedirectResponse)
 async def cas_callback(
     redirect64: str,
     ticket: str,
@@ -80,7 +114,7 @@ async def cas_callback(
             algorithm="HS256"
         )
 
-        response = RedirectResponse(url=redirect, status_code=303)
+        response = RedirectResponse(url=redirect, status_code=302)
         response.set_cookie(
             key="auth-token",
             value=token,
@@ -100,11 +134,64 @@ async def cas_callback(
         print(err)
         raise HTTPException(status_code=500, detail="Server error")
 
+
+
+@router.get("/session", response_model=UserSession)
+async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSession:
+    async with db.execute("SELECT username FROM users WHERE id = ?", (user_id,)) as cursor:
+        row = await cursor.fetchone()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    username = row[0]
+    return UserSession(user_id=user_id, username=username)
+
+@router.get("/refresh", response_class=Response)
+async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = Depends(authorize)) -> Response:
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    token = jwt.encode(
+        {"user_id": user_id, "exp" : int(expires.timestamp())},
+        key=auth_key,
+        algorithm="HS256"
+    )
+
+    response = Response(status_code=200)
+    response.set_cookie(
+        key="auth-token",
+        value=token,
+        httponly=True,
+        secure=False,    # set true if deploying
+        samesite="lax",
+        expires=expires,
+    )
+
+    return response
+
+@router.get("/delete", response_class=RedirectResponse)
+async def delete_user(
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db),
+    cas_origin: str = Depends(get_cas_origin)
+) -> RedirectResponse:
+    try:
+        async with db.execute("DELETE FROM users WHERE id = ?",(user_id,)) as cursor:
+            await db.commit()
+            if cursor.rowcount == 0:
+                raise HTTPException(status_code=404, detail="User not found")
+
+        response = RedirectResponse(url=f"{cas_origin}/logout", status_code=302)
+        response.delete_cookie("auth-token")
+        return response
+
+    except aiosqlite.OperationalError:
+        raise HTTPException(status_code=500, detail="Server error")
+
 async def get_username(
-    redirect64: str,
-    ticket: str,
-    origin: str,
-    cas_origin: str
+        redirect64: str,
+        ticket: str,
+        origin: str,
+        cas_origin: str
 ) -> str:
     async with httpx.AsyncClient(base_url=cas_origin) as cas_client:
         service = f"{origin}/api/auth/cas/{redirect64}"
@@ -129,56 +216,7 @@ async def get_username(
 
     return user
 
-@router.get("/session", response_model=UserSession)
-async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSession:
-    async with db.execute("SELECT username FROM users WHERE id = ?", (user_id,)) as cursor:
-        row = await cursor.fetchone()
 
-    if row is None:
-        raise HTTPException(status_code=404, detail="User not found")
-
-    username = row[0]
-    return UserSession(user_id=user_id, username=username)
-
-@router.get("/refresh")
-async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = Depends(authorize)) -> Response:
-    expires = datetime.now(timezone.utc) + timedelta(hours=1)
-    token = jwt.encode(
-        {"user_id": user_id, "exp" : int(expires.timestamp())},
-        key=auth_key,
-        algorithm="HS256"
-    )
-
-    response = Response(status_code=200)
-    response.set_cookie(
-        key="auth-token",
-        value=token,
-        httponly=True,
-        secure=False,    # set true if deploying
-        samesite="lax",
-        expires=expires,
-    )
-
-    return response
-
-@router.get("/delete")
-async def delete_user(
-    user_id: int = Depends(authorize),
-    db: Connection = Depends(get_db),
-    cas_origin: str = Depends(get_cas_origin)
-) -> RedirectResponse:
-    try:
-        async with db.execute("DELETE FROM users WHERE id = ?",(user_id,)) as cursor:
-            await db.commit()
-            if cursor.rowcount == 0:
-                raise HTTPException(status_code=404, detail="User not found")
-
-        response = RedirectResponse(url=f"{cas_origin}/logout", status_code=303)
-        response.delete_cookie("auth-token")
-        return response
-
-    except aiosqlite.OperationalError:
-        raise HTTPException(status_code=500, detail="Server error")
 
 async def get_user_id(db: Connection, username: str) -> int | None:
     async with db.execute(
