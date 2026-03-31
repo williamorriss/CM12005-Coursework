@@ -1,9 +1,9 @@
 import {createContext, useContext, useEffect, useState} from 'react'
 import * as React from "react";
 import { api } from './api/api';
-import type { paths } from './api/types';
+import type { components } from './api/types';
 
-export type User = paths["/api/auth/session"]["get"]["responses"]["200"]["content"]["application/json"]
+export type User = components["schemas"]["UserSession"];
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
