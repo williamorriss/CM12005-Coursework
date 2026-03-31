@@ -2,6 +2,8 @@ import "./App.css";
 import { useAuth } from "./AuthContext";
 import {useEffect} from "react";
 
+import { Notes } from "./PlantPage/Notes";
+
 function App() {
     const { session, isLoggedIn, getSession, login, logout, deleteUser } = useAuth();
     useEffect(() => {getSession().then()}, []);
@@ -14,6 +16,8 @@ function App() {
                 id = {session?.user_id}
 
                 <button onClick={deleteUser}>Delete</button>
+
+                <Notes notes={[]} />
             </>
         )
     } else {
