@@ -41,7 +41,7 @@ MANIFEST
 *.manifest
 *.spec
 
-# Installer logs
+# Installer plants.logs
 pip-log.txt
 pip-delete-this-directory.txt
 
