@@ -203,3 +203,4 @@ pnpm-debug.log*
 
 .db
 .sqlite
+backend/test.db
