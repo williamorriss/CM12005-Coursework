@@ -4,12 +4,15 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "gen:api": "openapi-typescript http://localhost:8000/openapi.json -o src/api/types.ts",
+    "dev": "npm run gen:api && vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "openapi-fetch": "^0.17.0",
+    "openapi-typescript": "^7.13.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   },
