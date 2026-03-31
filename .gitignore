@@ -204,3 +204,4 @@ pnpm-debug.log*
 .db
 .sqlite
 backend/test.db
+frontend/src/api/types.ts
