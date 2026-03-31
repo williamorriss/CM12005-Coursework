@@ -1,10 +1,9 @@
 import {createContext, useContext, useEffect, useState} from 'react'
 import * as React from "react";
+import { api } from './api/api';
+import type { components } from './api/types';
 
-export type User = {
-    userID: number,
-    username: string,
-}
+export type User = components["schemas"]["UserSession"];
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
@@ -21,30 +20,15 @@ interface AuthContextType {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [session, setSession] = useState<User | null>(null);
     const getSession = async () => {
-        try {
-            // we should probably use openapi fetch etc
-            const response = await fetch(
-                "/api/auth/session",
-                {credentials: "include"}
-            )
-            if (!response.ok) {
-                setSession(null);
-                return null;
-            }
-
-            const data = await response.json();
-
-            const user: User = {
-                userID: data.user_id as number,
-                username: data.username as string,
-            };
-            setSession(user);
-            return user;
-        } catch (error) {
+        const { data, error } = await api.GET("/api/auth/session", {});
+        if (error) {
             console.error(error);
             setSession(null);
             return null;
         }
+        
+        setSession(data);
+        return data;
     };
 
     useEffect(() => {
@@ -58,9 +42,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const isLoggedIn = () => session != null;
 
     const refreshSession = async () => {
-        const response = await fetch("/api/auth/refresh", {
-            method: "POST",
-        });
+        const { response } = await api.GET("/api/auth/refresh", {});
         return response.ok;
     }
 
@@ -75,10 +57,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ session, login, isLoggedIn, getSession, logout, refreshSession, deleteUser }}>
-    {children}
+    <AuthContext.Provider value={{ session, login, isLoggedIn, getSession, logout, refreshSession, deleteUser }}>
+        {children}
     </AuthContext.Provider>
-);
+    );
 }
 
 export const useAuth = () => {
