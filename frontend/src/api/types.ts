@@ -106,18 +106,18 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sensors/": {
+    "/api/sensors": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Sensors */
-        get: operations["get_sensors_api_sensors__get"];
+        /** Get User Sensors */
+        get: operations["get_user_sensors_api_sensors_get"];
         put?: never;
         /** Add Sensor */
-        post: operations["add_sensor_api_sensors__post"];
+        post: operations["add_sensor_api_sensors_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -358,7 +358,7 @@ export interface operations {
             };
         };
     };
-    get_sensors_api_sensors__get: {
+    get_user_sensors_api_sensors_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -378,7 +378,7 @@ export interface operations {
             };
         };
     };
-    add_sensor_api_sensors__post: {
+    add_sensor_api_sensors_post: {
         parameters: {
             query: {
                 name: string;

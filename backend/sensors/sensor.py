@@ -24,14 +24,14 @@ class SensorView(BaseModel):
 
     @staticmethod
     def from_row(row: Row) -> "SensorView":
-        sensor_id = row["id"]
-        name = row["name"]
-        plant_id = row["plant_id"]
+        sensor_id = row["ID"]
+        name = row["Name"]
+        plant_id = row["PlantID"]
         return SensorView(sensor_id=sensor_id, name=name, plant_id=plant_id)
 
 
-@router.get("/", response_model=list[SensorView])
-async def get_sensors(
+@router.get("", response_model=list[SensorView])
+async def get_user_sensors(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
 ):
@@ -44,7 +44,7 @@ async def get_sensors(
 @router.post("/{sensor_id}/session")
 async def activate_sensor(
     sensor_id: int,
-    user_id = Depends(authorize), # authorized endpoint
+    _user_id = Depends(authorize), # authorized endpoint
     sensors: dict[int, Sensor] = Depends(get_sensors),
     db: Connection = Depends(get_db),
 ):
@@ -60,8 +60,8 @@ async def activate_sensor(
         if row is None:
             raise HTTPException(status_code=404, detail="Sensor not found")
 
-        plant_id = row["plant_id"]
-        name = row["name"]
+        plant_id = row["PlantID"]
+        name = row["Name"]
 
         sensors[sensor_id] = TestSensor(
             plant_id=plant_id,
@@ -83,12 +83,11 @@ async def deactivate_sensor(
     sensor = sensors[sensor_id]
     sensor.stop()
 
-
-@router.post("/")
+@router.post("")
 async def add_sensor (
     name: str,
-    user_id: int = Depends(authorize), # authorized endpoint
     plant_id: int | None = None,
+    user_id: int = Depends(authorize), # authorized endpoint
     db: Connection = Depends(get_db),
 ):
     async with db.execute_insert("""

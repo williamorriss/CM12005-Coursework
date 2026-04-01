@@ -20,11 +20,12 @@ class TestSensor(Sensor):
         self.name = name
         self.sensor_id = sensor_id
         self.plant_id = plant_id
-        self.aggregate_delay = timedelta(minutes=1)
+        self.aggregate_delay = timedelta(seconds=3)
         self.plant_id = plant_id
         self._stop_event = multiprocessing.Event()
 
     def start(self):
+        print(f"{self.name} {self.sensor_id} RUNNING")
         self._stop_event.clear()
         multiprocessing.Process(target=self._run, daemon=True).start()
 
@@ -64,11 +65,12 @@ class TestSensor(Sensor):
 
     async def _db_writer(self, samples: np.ndarray) -> None:
         collated_sample = TestSensor._collate_queue(samples)
+        print(f"WRITING {collated_sample}")
 
         async with aiosqlite.connect(DBNAME) as db:
             temp, ph, timestamp = collated_sample
             await db.execute(
-                "INSERT INTO Logs (plantID, temperature, pH, CollectedTimestamp) VALUES (?, ?, ?, ?)",
-                (self.plant_id, temp, ph, timestamp)
+                "INSERT INTO Logs (SensorID, PlantID, temperature, pH, CollectedTimestamp) VALUES (?, ?, ?, ?, ?)",
+                (self.sensor_id, self.plant_id, temp, ph, timestamp)
             )
             await db.commit()

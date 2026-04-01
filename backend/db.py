@@ -1,5 +1,5 @@
 from typing import AsyncGenerator
-from aiosqlite import connect, Connection
+from aiosqlite import connect, Connection, Row
 from fastapi.requests import Request
 
 
@@ -7,6 +7,7 @@ DBNAME = "test.db"
 
 async def get_db(_r: Request) -> AsyncGenerator[Connection]:
     async with connect("test.db") as db:
+        db.row_factory = Row
         yield db
 
 async def init_db():
