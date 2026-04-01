@@ -1,1 +1,1 @@
-from .sensor import router
+from .sensor import router, Sensor

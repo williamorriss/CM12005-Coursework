@@ -1,6 +1,7 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
-import aiosqlite
+from aiosqlite import Connection, OperationalError
+from db import get_db
 from fastapi.requests import Request
 from fastapi import APIRouter, Depends
 import jwt
@@ -114,7 +115,7 @@ async def cas_callback(
             algorithm="HS256"
         )
 
-        response = RedirectResponse(url=redirect, status_code=302)
+        response = RedirectResponse(url=str(redirect), status_code=302)
         response.set_cookie(
             key="auth-token",
             value=token,
@@ -184,7 +185,7 @@ async def delete_user(
         response.delete_cookie("auth-token")
         return response
 
-    except aiosqlite.OperationalError:
+    except OperationalError:
         raise HTTPException(status_code=500, detail="Server error")
 
 async def get_username(
