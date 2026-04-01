@@ -14,8 +14,8 @@ class PlantView(BaseModel):
     name: str
 
     @staticmethod
-    def from_row(row: Row) -> PlantView:
-        return PlantView(**row)
+    def from_row(row: Row) -> "PlantView":
+        return PlantView(id=row["ID"], name=row["Name"])
 
 class NoteView(BaseModel):
     id: int
@@ -24,10 +24,15 @@ class NoteView(BaseModel):
     timestamp: datetime
 
     @staticmethod
-    def from_row(row: Row) -> PlantView:
-        return PlantView(**row)
+    def from_row(row: Row) -> "NoteView":
+        return NoteView(
+            id=row["ID"],
+            note=row["Note"],
+            rating=row["rating"],
+            timestamp=row["timestamp"]
+        )
 
-@router.get("/plants", response_model=list[PlantView])
+@router.get("", response_model=list[PlantView])
 async def get_plants(
     user_id = Depends(authorize),
     db: Connection = Depends(get_db)
@@ -37,8 +42,8 @@ async def get_plants(
     """, (user_id, )) as plants:
         return [PlantView.from_row(row) for row in plants]
 
-@router.post("/plants")
-async def get_plants(
+@router.post("")
+async def add_plant(
     name: str,
     user_id = Depends(authorize),
     db: Connection = Depends(get_db)
@@ -50,21 +55,21 @@ async def get_plants(
 
 # notes
 
-@router.get("/plants/{plant_id}/notes")
+@router.get("/{plant_id}/notes", response_model=list[NoteView])
 async def get_notes(
     plant_id: int,
     user_id = Depends(authorize),
     db: Connection = Depends(get_db)
-) -> list[PlantView]:
+) -> list[NoteView]:
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
     async with db.execute_fetchall("""
-       SELECT ID, Note, Rating, Timestamp FROM Notes WHERE PlantsID = ?
-       """, (user_id, )) as plants:
-        return [NoteView.from_row(row) for row in plants]
+       SELECT ID, Note, Rating, Timestamp FROM Notes WHERE PlantID = ?
+       """, (user_id, )) as notes:
+        return [NoteView.from_row(note) for note in notes]
 
-@router.post("/plants/{plant_id}/notes")
+@router.post("/{plant_id}/notes")
 async def post_note(
     plant_id: int,
     note: str,

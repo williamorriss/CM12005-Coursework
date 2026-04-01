@@ -100,15 +100,6 @@ function SensorViewComponent({sensor}: { sensor :SensorView}) : JSX.Element {
             ID: {sensor.sensor_id} Target: {sensor.plant_id}
         </>
     )
-
 }
-
-
-
-
-
-
-
-
 
 export default SensorPage;

@@ -536,7 +536,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/jsonl": unknown;
+                    "text/event-stream": unknown;
                 };
             };
             /** @description Validation Error */
