@@ -1,15 +1,12 @@
-from abc import ABC, abstractmethod
 
 from pydantic import BaseModel
 
-
+from . import Sensor
 from aiosqlite import Connection, Row
 from db import get_db
 from fastapi import APIRouter, Depends
 from auth import authorize
-from fastapi.responses import RedirectResponse, Response
 from fastapi import HTTPException
-import httpx
 from fastapi.requests import Request
 
 
@@ -20,23 +17,7 @@ router = APIRouter(prefix="/sensors")
 def get_sensors(request: Request) -> dict[int, Sensor]:
     return request.app.state.sensors
 
-class Sensor(ABC):
 
-    @abstractmethod
-    def start(self):
-        pass
-
-    @abstractmethod
-    def stop(self):
-        pass
-
-    @abstractmethod
-    def is_running(self) -> bool:
-        pass
-
-    @abstractmethod
-    def set_target(self, plant_id: int):
-        pass
 
 
 class SensorView(BaseModel):
