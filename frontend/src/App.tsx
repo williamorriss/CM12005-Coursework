@@ -1,6 +1,6 @@
 import "./App.css";
-import {Routes, Route} from "react-router-dom"
-import { Home } from "./Pages/Home/Home"
+import {Routes, Route} from "react-router-dom";
+import { Home } from "./Pages/Home/Home";
 import { SensorPage } from "./Pages/Dev/SensorPage";
 
 function App() {
