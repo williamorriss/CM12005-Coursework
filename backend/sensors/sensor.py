@@ -17,9 +17,6 @@ router = APIRouter(prefix="/sensors")
 def get_sensors(request: Request) -> dict[int, Sensor]:
     return request.app.state.sensors
 
-
-
-
 class SensorView(BaseModel):
     sensor_id: int
     plant_id: int
@@ -32,7 +29,19 @@ class SensorView(BaseModel):
         plant_id = row["plant_id"]
         return SensorView(sensor_id=sensor_id, name=name, plant_id=plant_id)
 
-@router.post("/sensors/{sensor_id}/session")
+
+@router.get("/", response_model=list[SensorView])
+async def get_sensors(
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db)
+):
+    async with db.execute_fetchall("""
+        SELECT ID, PlantID, Name FROM Sensors WHERE UserID = ? 
+    """, (user_id,)) as rows:
+        return [SensorView.from_row(row) for row in rows]
+
+
+@router.post("/{sensor_id}/session")
 async def activate_sensor(
     sensor_id: int,
     user_id = Depends(authorize), # authorized endpoint
@@ -62,19 +71,20 @@ async def activate_sensor(
         sensors[sensor_id].start()
 
 
-@router.delete("/sensors/{sensor_id}/session")
+@router.delete("/{sensor_id}/session")
 async def deactivate_sensor(
     sensor_id: int,
     _user_id = Depends(authorize), # authorized endpoint
     sensors: dict[int, Sensor] = Depends(get_sensors),
 ):
-    if sensor_id in sensors.keys():
-        sensor = sensors[sensor_id]
-        sensor.stop()
+    if sensor_id not in sensors.keys():
+        raise HTTPException(status_code=404, detail="Sensor not found")
 
-    raise HTTPException(status_code=404, detail="Sensor not found")
+    sensor = sensors[sensor_id]
+    sensor.stop()
 
-@router.post("/sensors")
+
+@router.post("/")
 async def add_sensor (
     name: str,
     user_id: int = Depends(authorize), # authorized endpoint
@@ -86,9 +96,10 @@ async def add_sensor (
     """, (user_id, plant_id, name)):
         await db.commit()
 
-@router.delete("/sensors/{sensor_id}")
+@router.delete("/{sensor_id}")
 async def del_sensor (
     sensor_id: int,
+    _user_id = Depends(authorize),
     db: Connection = Depends(get_db),
 ):
     async with db.execute("""
@@ -96,11 +107,12 @@ async def del_sensor (
     """, (sensor_id,)) :
         await db.commit()
 
-@router.patch("/sensors/{sensor_id}")
+@router.patch("/{sensor_id}")
 async def update_sensor(
     sensor_id: int,
     plant_id: int | None = None,
     name: str | None = None,
+    _user_id = Depends(authorize),
     db: Connection = Depends(get_db),
 ):
     if plant_id:

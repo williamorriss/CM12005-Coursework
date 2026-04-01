@@ -201,7 +201,9 @@ pnpm-debug.log*
 
 *.tsbuildinfo
 
-.db
-.sqlite
+*.db
+*.db-shm
+*.db-wal
+*.sqlite
 backend/test.db
 frontend/src/api/types.ts

@@ -4,7 +4,7 @@ import {type JSX, useEffect} from "react";
 import { Notes } from "../PlantPage/Notes";
 import { useNavigate } from 'react-router-dom'
 
-export function Home() : JSX.Element {
+function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
@@ -55,3 +55,5 @@ function LoggedOut({login}: LogoutProps) : JSX.Element {
         </>
     )
 }
+
+export default Home;

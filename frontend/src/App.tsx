@@ -1,7 +1,7 @@
 import "./App.css";
 import {Routes, Route} from "react-router-dom"
-import { Home } from "./Pages/Home/Home"
-import { SensorPage } from "./Pages/Dev/SensorPage";
+import Home from "./Pages/Home/Home"
+import SensorPage from "./Pages/Dev/SensorPage";
 
 function App() {
     return (
@@ -14,6 +14,5 @@ function App() {
     )
 
 }
-
 
 export default App

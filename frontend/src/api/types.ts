@@ -106,7 +106,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sensors/sensors/{sensor_id}/session": {
+    "/api/sensors/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sensors */
+        get: operations["get_sensors_api_sensors__get"];
+        put?: never;
+        /** Add Sensor */
+        post: operations["add_sensor_api_sensors__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sensors/{sensor_id}/session": {
         parameters: {
             query?: never;
             header?: never;
@@ -116,32 +134,15 @@ export interface paths {
         get?: never;
         put?: never;
         /** Activate Sensor */
-        post: operations["activate_sensor_api_sensors_sensors__sensor_id__session_post"];
+        post: operations["activate_sensor_api_sensors__sensor_id__session_post"];
         /** Deactivate Sensor */
-        delete: operations["deactivate_sensor_api_sensors_sensors__sensor_id__session_delete"];
+        delete: operations["deactivate_sensor_api_sensors__sensor_id__session_delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/sensors/sensors": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Add Sensor */
-        post: operations["add_sensor_api_sensors_sensors_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/sensors/sensors/{sensor_id}": {
+    "/api/sensors/{sensor_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -152,11 +153,11 @@ export interface paths {
         put?: never;
         post?: never;
         /** Del Sensor */
-        delete: operations["del_sensor_api_sensors_sensors__sensor_id__delete"];
+        delete: operations["del_sensor_api_sensors__sensor_id__delete"];
         options?: never;
         head?: never;
         /** Update Sensor */
-        patch: operations["update_sensor_api_sensors_sensors__sensor_id__patch"];
+        patch: operations["update_sensor_api_sensors__sensor_id__patch"];
         trace?: never;
     };
     "/": {
@@ -184,6 +185,15 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** SensorView */
+        SensorView: {
+            /** Sensor Id */
+            sensor_id: number;
+            /** Plant Id */
+            plant_id: number;
+            /** Name */
+            name: string;
         };
         /** UserSession */
         UserSession: {
@@ -348,13 +358,11 @@ export interface operations {
             };
         };
     };
-    activate_sensor_api_sensors_sensors__sensor_id__session_post: {
+    get_sensors_api_sensors__get: {
         parameters: {
             query?: never;
             header?: never;
-            path: {
-                sensor_id: number;
-            };
+            path?: never;
             cookie?: never;
         };
         requestBody?: never;
@@ -365,52 +373,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/json": components["schemas"]["SensorView"][];
                 };
             };
         };
     };
-    deactivate_sensor_api_sensors_sensors__sensor_id__session_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                sensor_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    add_sensor_api_sensors_sensors_post: {
+    add_sensor_api_sensors__post: {
         parameters: {
             query: {
                 name: string;
@@ -442,7 +410,7 @@ export interface operations {
             };
         };
     };
-    del_sensor_api_sensors_sensors__sensor_id__delete: {
+    activate_sensor_api_sensors__sensor_id__session_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -473,7 +441,69 @@ export interface operations {
             };
         };
     };
-    update_sensor_api_sensors_sensors__sensor_id__patch: {
+    deactivate_sensor_api_sensors__sensor_id__session_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sensor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    del_sensor_api_sensors__sensor_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sensor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_sensor_api_sensors__sensor_id__patch: {
         parameters: {
             query?: {
                 plant_id?: number | null;
