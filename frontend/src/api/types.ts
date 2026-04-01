@@ -106,6 +106,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+<<<<<<< HEAD
     "/api/sensors": {
         parameters: {
             query?: never;
@@ -125,6 +126,9 @@ export interface paths {
         trace?: never;
     };
     "/api/sensors/{sensor_id}/session": {
+=======
+    "/api/sensors/sensors/{sensor_id}/session": {
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         parameters: {
             query?: never;
             header?: never;
@@ -134,15 +138,42 @@ export interface paths {
         get?: never;
         put?: never;
         /** Activate Sensor */
+<<<<<<< HEAD
         post: operations["activate_sensor_api_sensors__sensor_id__session_post"];
         /** Deactivate Sensor */
         delete: operations["deactivate_sensor_api_sensors__sensor_id__session_delete"];
+=======
+        post: operations["activate_sensor_api_sensors_sensors__sensor_id__session_post"];
+        /** Deactivate Sensor */
+        delete: operations["deactivate_sensor_api_sensors_sensors__sensor_id__session_delete"];
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
+<<<<<<< HEAD
     "/api/sensors/{sensor_id}": {
+=======
+    "/api/sensors/sensors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Sensor */
+        post: operations["add_sensor_api_sensors_sensors_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sensors/sensors/{sensor_id}": {
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         parameters: {
             query?: never;
             header?: never;
@@ -153,6 +184,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Del Sensor */
+<<<<<<< HEAD
         delete: operations["del_sensor_api_sensors__sensor_id__delete"];
         options?: never;
         head?: never;
@@ -210,6 +242,13 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+=======
+        delete: operations["del_sensor_api_sensors_sensors__sensor_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Sensor */
+        patch: operations["update_sensor_api_sensors_sensors__sensor_id__patch"];
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         trace?: never;
     };
     "/": {
@@ -238,6 +277,7 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+<<<<<<< HEAD
         /** NoteView */
         NoteView: {
             /** Id */
@@ -268,6 +308,8 @@ export interface components {
             /** Name */
             name: string;
         };
+=======
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         /** UserSession */
         UserSession: {
             /** User Id */
@@ -431,11 +473,21 @@ export interface operations {
             };
         };
     };
+<<<<<<< HEAD
     get_user_sensors_api_sensors_get: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
+=======
+    activate_sensor_api_sensors_sensors__sensor_id__session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sensor_id: number;
+            };
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
             cookie?: never;
         };
         requestBody?: never;
@@ -446,12 +498,60 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
+<<<<<<< HEAD
                     "application/json": components["schemas"]["SensorView"][];
+=======
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
                 };
             };
         };
     };
+<<<<<<< HEAD
     add_sensor_api_sensors_post: {
+=======
+    deactivate_sensor_api_sensors_sensors__sensor_id__session_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                sensor_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_sensor_api_sensors_sensors_post: {
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         parameters: {
             query: {
                 name: string;
@@ -483,7 +583,11 @@ export interface operations {
             };
         };
     };
+<<<<<<< HEAD
     activate_sensor_api_sensors__sensor_id__session_post: {
+=======
+    del_sensor_api_sensors_sensors__sensor_id__delete: {
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
         parameters: {
             query?: never;
             header?: never;
@@ -514,9 +618,18 @@ export interface operations {
             };
         };
     };
+<<<<<<< HEAD
     deactivate_sensor_api_sensors__sensor_id__session_delete: {
         parameters: {
             query?: never;
+=======
+    update_sensor_api_sensors_sensors__sensor_id__patch: {
+        parameters: {
+            query?: {
+                plant_id?: number | null;
+                name?: string | null;
+            };
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
             header?: never;
             path: {
                 sensor_id: number;
@@ -545,6 +658,7 @@ export interface operations {
             };
         };
     };
+<<<<<<< HEAD
     del_sensor_api_sensors__sensor_id__delete: {
         parameters: {
             query?: never;
@@ -723,6 +837,8 @@ export interface operations {
             };
         };
     };
+=======
+>>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
     index__get: {
         parameters: {
             query?: never;
