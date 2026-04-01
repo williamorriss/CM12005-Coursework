@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 from datetime import datetime, timedelta
 import numpy as np
 import asyncio
@@ -69,7 +68,7 @@ class TestSensor(Sensor):
     @staticmethod
     def _collate(samples: np.ndarray) -> Sample:
         return Sample(
-=======
+
 from random import randrange
 from datetime import datetime, timedelta
 import numpy as np
@@ -129,13 +128,13 @@ class TestSensor(Sensor):
     @staticmethod
     def _collate_queue(samples: np.ndarray) -> TestSample:
         return TestSample(
->>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
+
             float(samples[:, 0].mean()),
             float(samples[:, 1].mean()),
             samples[:, 2].max()
         )
 
-<<<<<<< HEAD
+
     async def _db_writer(self, collated: Sample) -> None:
         print(f"WRITING {collated}")
 
@@ -144,7 +143,7 @@ class TestSensor(Sensor):
             await db.execute(
                 "INSERT INTO Logs (SensorID, PlantID, temperature, pH, CollectedTimestamp) VALUES (?, ?, ?, ?, ?)",
                 (self._sensor_id, self._plant_id, temp, ph, timestamp)
-=======
+
     async def _db_writer(self, samples: np.ndarray) -> None:
         collated_sample = TestSensor._collate_queue(samples)
 
@@ -153,6 +152,5 @@ class TestSensor(Sensor):
             await db.execute(
                 "INSERT INTO Logs (plantID, temperature, pH, CollectedTimestamp) VALUES (?, ?, ?, ?)",
                 (self.plant_id, temp, ph, timestamp)
->>>>>>> 13e1dc504d87b0fa4288ec041312f01c468236f7
             )
             await db.commit()
