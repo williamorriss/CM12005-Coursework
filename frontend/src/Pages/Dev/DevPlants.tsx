@@ -7,7 +7,6 @@ type NoteView = components["schemas"]["NoteView"];
 
 function PlantPage(): JSX.Element {
     const [plantID, setPlantID] = useState<number>(0);
-    // Fix: Initialize with the correct type so .map() knows what 'plant' is
     const [plants, setPlants] = useState<PlantView[]>([]);
     const [notes, setNotes] = useState<NoteView[]>([]);
 
@@ -18,8 +17,8 @@ function PlantPage(): JSX.Element {
     };
 
     const fetchNotes = async () => {
-        const { data, error } = await api.GET("/api/plants/{plantID}/notes", {
-            params: { path: { plantID } },
+        const { data, error } = await api.GET("/api/plants/{plant_id}/notes", {
+            params: { path: { plant_id: plantID } },
         });
         if (error) alert(error);
         if (data) setNotes(data);
@@ -103,9 +102,9 @@ function AddPlantForm(): JSX.Element {
 function AddNoteForm({ plantID }: { plantID: number }): JSX.Element {
     const handleSubmit = async (form: FormData) => {
 
-        const { error } = await api.POST("/api/plants/{plantID}/notes", {
+        const { error } = await api.POST("/api/plants/{plant_id}/notes", {
             params: {
-                path: { plantID },
+                path: { plant_id: plantID },
                 query: {
                     note: form.get("note") as string,
                     rating: 5,
