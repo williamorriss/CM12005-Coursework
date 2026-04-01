@@ -5,7 +5,7 @@ from collections import namedtuple
 import multiprocessing
 import asyncio
 import aiosqlite
-from logs.sensor import Sensor
+from . import Sensor
 from db import DBNAME
 
 TestSample = namedtuple("TestSample", ["temperature", "pH", "timestamp"])

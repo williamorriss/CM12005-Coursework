@@ -55,10 +55,10 @@ class SensorView(BaseModel):
 async def activate_sensor(
     sensor_id: int,
     user_id = Depends(authorize), # authorized endpoint
-    sensors: Sensor = Depends(get_sensors),
+    sensors: dict[int, Sensor] = Depends(get_sensors),
     db: Connection = Depends(get_db),
 ):
-    if sensor_id in sensors:
+    if sensor_id in sensors.keys():
         # already running
         sensors[sensor_id].start()
         return
@@ -66,27 +66,30 @@ async def activate_sensor(
     async with db.execute("""
         SELECT PlantID, Name FROM Sensors WHERE ID = ? 
     """, (sensor_id,)) as cursor:
-        row = cursor.fetchone()
+        row = await cursor.fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Sensor not found")
 
+        plant_id = row["plant_id"]
+        name = row["name"]
+
         sensors[sensor_id] = TestSensor(
-            user_id=user_id,
-            plant_id=row["plant_id"],
+            plant_id=plant_id,
             sensor_id=sensor_id,
-            name=row["name"]
+            name=name
         )
         sensors[sensor_id].start()
 
 
 @router.delete("/sensors/{sensor_id}/session")
 async def deactivate_sensor(
+    sensor_id: int,
     _user_id = Depends(authorize), # authorized endpoint
-    sensor_id = int,
-    sensors: Sensor = Depends(get_sensors),
+    sensors: dict[int, Sensor] = Depends(get_sensors),
 ):
-    if sensor_id in sensors:
-        sensors[sensor_id].stop()
+    if sensor_id in sensors.keys():
+        sensor = sensors[sensor_id]
+        sensor.stop()
 
     raise HTTPException(status_code=404, detail="Sensor not found")
 
@@ -103,7 +106,7 @@ async def add_sensor (
         await db.commit()
 
 @router.delete("/sensors/{sensor_id}")
-async def add_sensor (
+async def del_sensor (
     sensor_id: int,
     db: Connection = Depends(get_db),
 ):
