@@ -40,3 +40,7 @@ app.include_router(plant_router, prefix="/api")
 @app.get("/")
 async def index():
     return FileResponse("index.html")
+
+@app.get("/hello")
+async def hello():
+    return {"message": "👋 Hello back! 🗿👋"}
