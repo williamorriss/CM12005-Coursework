@@ -1,0 +1,14 @@
+#LoginButton {
+  position: relative;
+  align-items: center;
+  font-size: large;
+  /* color: #3fc87f; */
+}
+
+#login {
+  position: static;
+  align-items: center;
+  font-size: large;
+  /* background-color: #3fc87f; */
+}
+
