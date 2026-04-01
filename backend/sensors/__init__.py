@@ -1,5 +1,10 @@
 from abc import ABC, abstractmethod
 
+from collections import namedtuple
+from asyncio import Queue
+
+Sample = namedtuple("Sample", ["temperature", "ph", "timestamp"])
+
 class Sensor(ABC):
 
     @abstractmethod
@@ -18,5 +23,13 @@ class Sensor(ABC):
     def set_target(self, plant_id: int):
         pass
 
+    @abstractmethod
+    def add_watcher(self, queue: Queue[Sample]):
+        pass
+
+    @abstractmethod
+    def remove_watcher(self, queue: Queue[Sample]):
+        pass
+
 # reexports
-from .sensor import router
+from .routes import router

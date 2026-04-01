@@ -22,14 +22,14 @@ function Home() : JSX.Element {
 
 }
 
-type LoginProps = {
+
+function LoggedIn({logout, session, deleteUser, navigate} :
+{
     logout: () => void,
     session: User,
     deleteUser: () => void,
     navigate: (destination: string) => void,
-}
-
-function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.Element {
+}) : JSX.Element {
     return (
         <>
             <button onClick={logout}>logout</button>
@@ -39,16 +39,12 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <button onClick={deleteUser}>Delete</button>
 
             <Notes notes={[]} />
-            <button onClick={() => navigate("/dev/sensors")}> wacky-silly </button>
+            <button onClick={() => navigate("/dev/sensors")}> dev </button>
         </>
     )
 }
 
-type LogoutProps = {
-    login: () => void,
-}
-
-function LoggedOut({login}: LogoutProps) : JSX.Element {
+function LoggedOut({login}: { login: () => void }) : JSX.Element {
     return (
         <>
             <button onClick={login}>login</button>

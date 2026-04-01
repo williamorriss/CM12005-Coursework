@@ -1,14 +1,16 @@
+import asyncio
+from collections.abc import AsyncIterable
+from datetime import datetime
 
+from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
 
-from . import Sensor
+from . import Sensor, Sample
 from aiosqlite import Connection, Row
 from db import get_db
-from fastapi import APIRouter, Depends
+from fastapi import Depends
 from auth import authorize
-from fastapi import HTTPException
-from fastapi.requests import Request
-
+from fastapi import Request, APIRouter, HTTPException
 
 from sensors.testsensor import TestSensor
 
@@ -30,6 +32,15 @@ class SensorView(BaseModel):
         return SensorView(sensor_id=sensor_id, name=name, plant_id=plant_id)
 
 
+class SampleView(BaseModel):
+    temperature: float
+    ph: float
+    timestamp: datetime
+    @staticmethod
+    def from_sample(sample: Sample) -> "SampleView":
+        return SampleView(temperature=sample.temperature, ph=sample.ph, timestamp=sample.timestamp)
+
+
 @router.get("", response_model=list[SensorView])
 async def get_user_sensors(
     user_id: int = Depends(authorize),
@@ -48,7 +59,7 @@ async def activate_sensor(
     sensors: dict[int, Sensor] = Depends(get_sensors),
     db: Connection = Depends(get_db),
 ):
-    if sensor_id in sensors.keys():
+    if sensor_id in sensors:
         # already running
         sensors[sensor_id].start()
         return
@@ -63,12 +74,14 @@ async def activate_sensor(
         plant_id = row["PlantID"]
         name = row["Name"]
 
-        sensors[sensor_id] = TestSensor(
+        sensor= TestSensor(
             plant_id=plant_id,
             sensor_id=sensor_id,
             name=name
         )
-        sensors[sensor_id].start()
+
+        sensor.start()
+        sensors[sensor_id] = sensor
 
 
 @router.delete("/{sensor_id}/session")
@@ -77,7 +90,7 @@ async def deactivate_sensor(
     _user_id = Depends(authorize), # authorized endpoint
     sensors: dict[int, Sensor] = Depends(get_sensors),
 ):
-    if sensor_id not in sensors.keys():
+    if sensor_id not in sensors:
         raise HTTPException(status_code=404, detail="Sensor not found")
 
     sensor = sensors[sensor_id]
@@ -106,22 +119,43 @@ async def del_sensor (
     """, (sensor_id,)) :
         await db.commit()
 
-@router.patch("/{sensor_id}")
-async def update_sensor(
+# @router.patch("/{sensor_id}")
+# async def update_sensor(
+#     sensor_id: int,
+#     plant_id: int | None = None,
+#     name: str | None = None,
+#     _user_id = Depends(authorize),
+#     db: Connection = Depends(get_db),
+# ):
+#     if plant_id:
+#         await db.execute("""
+#             UPDATE Sensors SET PlantID = ? WHERE ID = ?
+#         """, (plant_id, sensor_id))
+#
+#     if name:
+#         await db.execute("""
+#             UPDATE Sensors SET Name = ? WHERE ID = ?
+#         """, (name, sensor_id))
+#
+#     await db.commit()
+
+@router.get("/{sensor_id}/stream", response_class=EventSourceResponse)
+async def get_sensor_stream(
+    request: Request,
     sensor_id: int,
-    plant_id: int | None = None,
-    name: str | None = None,
-    _user_id = Depends(authorize),
-    db: Connection = Depends(get_db),
-):
-    if plant_id:
-        await db.execute("""
-            UPDATE Sensors SET PlantID = ? WHERE ID = ?
-        """, (plant_id, sensor_id))
+    sensors: dict[int, Sensor] = Depends(get_sensors),
+) -> AsyncIterable[SampleView]:
+    out: asyncio.Queue[Sample] = asyncio.Queue()
+    if sensor_id not in sensors:
+        raise HTTPException(status_code=404, detail="Sensor not found")
 
-    if name:
-        await db.execute("""
-            UPDATE Sensors SET Name = ? WHERE ID = ?
-        """, (name, sensor_id))
-
-    await db.commit()
+    sensor = sensors[sensor_id]
+    sensor.add_watcher(out)
+    try:
+        while True:
+            if await request.is_disconnected():
+                break
+            data = SampleView.from_sample(await out.get())
+            yield data
+    finally:
+        sensor.remove_watcher(out)

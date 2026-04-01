@@ -1,70 +1,114 @@
-import { type JSX, useState } from "react";
-import { api } from "../../api/api";
+import {type JSX, useEffect, useState} from "react";
+import { api, APICONFIG } from "../../api/api";
+import type { components } from "../../api/types"
+
+type SensorView = components["schemas"]["SensorView"];
+
+
 
 function SensorPage(): JSX.Element {
-    const [activateSensorId, setActivateSensorId] = useState(1);
-    const [deactivateSensorId, setDeactivateSensorId] = useState(1);
-    const [addName, setAddName] = useState("");
-    const [addPlantId, setAddPlantId] = useState("");
-    const [deleteSensorId, setDeleteSensorId] = useState(1);
-    const [updateSensorId, setUpdateSensorId] = useState(1);
-    const [updateName, setUpdateName] = useState("");
-    const [updatePlantId, setUpdatePlantId] = useState("");
-    const [sensors, setSensors] = useState<unknown>(null);
+    const [sensorID, setSensorID] = useState<number>(0);
+    const [plantID, setPlantID] = useState<number>(0);
+    const [lastFetch, setLastFetch] = useState<number | null>();
+    const [sensors, setSensors] = useState<SensorView[]>([]);
+    const [watching, setWatching] = useState<boolean>(false);
 
-    return <>
-        DEV PAGE
+    const fetchSensors = async () => {
+        const { data, error } = await api.GET("/api/sensors", {})
+        if (error) {
+            alert(error);
+        }
+        console.log(data);
 
-        <form onSubmit={e => { e.preventDefault(); api.POST("/api/sensors/{sensor_id}/session", {
-            params: { path: { sensor_id: activateSensorId } }
-        })}}>
-            <label>Sensor ID: <input type="number" value={activateSensorId} onChange={e => setActivateSensorId(Number(e.target.value))} /></label>
-            <button type="submit">Activate Sensor</button>
-        </form>
+        setSensors(data);
+    }
 
-        <form onSubmit={e => { e.preventDefault(); api.DELETE("/api/{sensor_id}/session", {
-            params: { path: { sensor_id: deactivateSensorId } }
-        })}}>
-            <label>Sensor ID: <input type="number" value={deactivateSensorId} onChange={e => setDeactivateSensorId(Number(e.target.value))} /></label>
-            <button type="submit">Deactivate Sensor</button>
-        </form>
 
-        <form onSubmit={e => { e.preventDefault(); api.POST("/api/sensors", {
-            params: { query: { name: addName, plant_id: addPlantId ? Number(addPlantId) : undefined } }
-        })}}>
-            <label>Name: <input type="text" value={addName} onChange={e => setAddName(e.target.value)} /></label>
-            <label>Plant ID: <input type="number" value={addPlantId} onChange={e => setAddPlantId(e.target.value)} /></label>
-            <button type="submit">Add Sensor</button>
-        </form>
+    useEffect(() => {
+        if (!watching || !sensorID) {
+            return
+        }
 
-        <form onSubmit={e => { e.preventDefault(); api.DELETE("/api/sensors/{sensor_id}", {
-            params: { path: { sensor_id: deleteSensorId } }
-        })}}>
-            <label>Sensor ID: <input type="number" value={deleteSensorId} onChange={e => setDeleteSensorId(Number(e.target.value))} /></label>
-            <button type="submit">Delete Sensor</button>
-        </form>
+        const source = new EventSource(`${APICONFIG.baseUrl}/api/sensors/${sensorID}/stream`, {withCredentials: true});
 
-        <form onSubmit={e => { e.preventDefault(); api.PATCH("/api/sensors/{sensor_id}", {
-            params: {
-                path: { sensor_id: updateSensorId },
-                query: { name: updateName || undefined, plant_id: updatePlantId ? Number(updatePlantId) : undefined }
-            }
-        })}}>
-            <label>Sensor ID: <input type="number" value={updateSensorId} onChange={e => setUpdateSensorId(Number(e.target.value))} /></label>
-            <label>Name: <input type="text" value={updateName} onChange={e => setUpdateName(e.target.value)} /></label>
-            <label>Plant ID: <input type="number" value={updatePlantId} onChange={e => setUpdatePlantId(e.target.value)} /></label>
-            <button type="submit">Update Sensor</button>
-        </form>
+        source.onmessage = (e) => {
+            setLastFetch(e.data);
+        };
 
-        <form onSubmit={async e => {
-            e.preventDefault();
-            const { data } = await api.GET("/api/sensors");
-            setSensors(data);
-        }}>
-            <button type="submit">Get Sensors</button>
-            {sensors && <pre>{JSON.stringify(sensors, null, 2)}</pre>}
-        </form>
-    </>;
+        source.onerror = (err) => {
+            console.error("EventSource failed:", err);
+            source.close();
+        };
+
+        return () => {
+            console.log("Closing connection...");
+            source.close();
+        };
+    }, [watching, sensorID]);
+
+    return (
+        <>
+            <InputSensor setSensorID={setSensorID} />
+            <InputPlantID setPlantID={setPlantID} />
+            SensorID: {sensorID}, plantID: {plantID}
+
+            Found: {lastFetch}
+
+            <button onClick={
+                () => api.POST("/api/sensors/{sensor_id}/session", {
+                    params: {
+                    path: { sensor_id: sensorID! }
+            }})}> Activate Session </button>
+
+            <button onClick={
+                () => api.DELETE("/api/sensors/{sensor_id}/session", {
+                    params: {
+                        path: { sensor_id: sensorID! }
+                    }
+                })
+            }> Deactivate Session </button>
+
+            <button onClick={() => setWatching(true)}> watch </button>
+            <button onClick={() => setWatching(false)}> unwatch </button>
+
+            <button onClick={fetchSensors}> get sensors </button>
+            Sensors: {sensors.map((sensor) => <SensorViewComponent key={sensor.sensor_id} sensor = {sensor}/>)}
+        </>
+    )
 }
+
+function InputSensor( {setSensorID } : { setSensorID: (id: number) => void } ) : JSX.Element {
+    return (
+        <form>
+            <input name="sensorID" type="number" onChange={(event) => setSensorID(parseInt(event.target.value)) } />
+        </form>
+    )
+}
+
+function InputPlantID ( {setPlantID } : { setPlantID: (id: number) => void } ) : JSX.Element {
+    return (
+        <form>
+            <input name="sensorID" type="number" onChange={(event) => setPlantID(parseInt(event.target.value)) } />
+        </form>
+    )
+}
+
+function SensorViewComponent({sensor}: { sensor :SensorView}) : JSX.Element {
+    return (
+        <>
+            Name: {sensor.name}
+            ID: {sensor.sensor_id} Target: {sensor.plant_id}
+        </>
+    )
+
+}
+
+
+
+
+
+
+
+
 
 export default SensorPage;

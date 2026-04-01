@@ -156,8 +156,24 @@ export interface paths {
         delete: operations["del_sensor_api_sensors__sensor_id__delete"];
         options?: never;
         head?: never;
-        /** Update Sensor */
-        patch: operations["update_sensor_api_sensors__sensor_id__patch"];
+        patch?: never;
+        trace?: never;
+    };
+    "/api/sensors/{sensor_id}/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Sensor Stream */
+        get: operations["get_sensor_stream_api_sensors__sensor_id__stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/": {
@@ -503,12 +519,9 @@ export interface operations {
             };
         };
     };
-    update_sensor_api_sensors__sensor_id__patch: {
+    get_sensor_stream_api_sensors__sensor_id__stream_get: {
         parameters: {
-            query?: {
-                plant_id?: number | null;
-                name?: string | null;
-            };
+            query?: never;
             header?: never;
             path: {
                 sensor_id: number;
@@ -523,7 +536,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/jsonl": unknown;
                 };
             };
             /** @description Validation Error */
