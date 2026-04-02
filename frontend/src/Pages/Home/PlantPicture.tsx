@@ -1,9 +1,9 @@
-// import '../PlantPage/box.css';
+import "./PlantPicture.css";
 
 export function PlantPicture({name, src}: {name: string, src: string}) {
     return (
         <div className="counter-box">
-            <h1>{name}</h1>
+            <p>{name}</p>
             <img src={src} />
         </div>
     )
