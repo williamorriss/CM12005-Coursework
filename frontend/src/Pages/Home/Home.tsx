@@ -76,7 +76,6 @@ function LoggedOut({login}: LogoutProps) : JSX.Element {
             <button onClick={login}>login</button>
         </>
     )
-<<<<<<< HEAD
 }
 
 export default Home;
