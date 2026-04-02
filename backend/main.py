@@ -1,3 +1,5 @@
+from typing import Any, AsyncGenerator
+
 from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from db import init_db
@@ -14,13 +16,14 @@ ORIGIN = "http://localhost:8000"
 CAS_ORIGIN = "https://auth.bath.ac.uk"
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
     await init_db()
     yield
 
 app = FastAPI(lifespan=lifespan)
+# noinspection PyTypeChecker
 app.add_middleware(
-    CORSMiddleware, # type: ignore
+    CORSMiddleware,
     allow_origins=[DEV_SERVER],
     allow_credentials=True,
     allow_headers=["AUTHORIZATION", "CONTENT_TYPE", "COOKIE", "ACCEPT"],
@@ -38,5 +41,5 @@ app.include_router(sensors_router, prefix="/api")
 app.include_router(plant_router, prefix="/api")
 
 @app.get("/")
-async def index():
+async def index() -> FileResponse:
     return FileResponse("index.html")

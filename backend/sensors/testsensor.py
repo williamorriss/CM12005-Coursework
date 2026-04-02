@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from aiosqlite import Row
 import numpy as np
 import asyncio
 import aiosqlite
@@ -17,14 +18,22 @@ class TestSensor(Sensor):
         self._sensor_id = sensor_id
         self._plant_id = plant_id
         self._aggregate_delay = timedelta(seconds=3)
-        self._task: asyncio.Task | None = None
+        self._task: asyncio.Task[None] | None = None
         self._watchers: list[asyncio.Queue[Sample]] = []
 
-    def start(self):
+    @staticmethod
+    def from_row(row: Row) -> "TestSensor":
+        return TestSensor(
+            sensor_id=row["SensorID"],
+            plant_id=row["Plant_id"],
+            name=row["Name"]
+        )
+
+    def start(self) -> None:
         print(f"{self._name} {self._sensor_id} RUNNING")
         self._task = asyncio.create_task(self._process())
 
-    def stop(self):
+    def stop(self) -> None:
         if self._task:
             self._task.cancel()
             self._task = None
@@ -32,17 +41,17 @@ class TestSensor(Sensor):
     def is_running(self) -> bool:
         return self._task is not None and not self._task.done()
 
-    def set_target(self, plant_id: int):
+    def set_target(self, plant_id: int) -> None:
         self._plant_id = plant_id
 
-    def add_watcher(self, queue: asyncio.Queue[Sample]):
+    def add_watcher(self, queue: asyncio.Queue[Sample]) -> None:
         self._watchers.append(queue)
 
-    def remove_watcher(self, queue: asyncio.Queue[Sample]):
+    def remove_watcher(self, queue: asyncio.Queue[Sample]) -> None:
         self._watchers.remove(queue)
 
-    async def _process(self):
-        samples = []
+    async def _process(self) -> None:
+        samples: list[Sample] = []
         next_write = datetime.now() + self._aggregate_delay
 
         try:

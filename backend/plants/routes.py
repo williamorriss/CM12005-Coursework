@@ -1,4 +1,8 @@
+from typing import cast
+
 from aiosqlite import Connection, Row
+from starlette import status
+from starlette.responses import Response
 
 from db import get_db
 from fastapi import APIRouter, Depends
@@ -34,7 +38,7 @@ class NoteView(BaseModel):
 
 @router.get("", response_model=list[PlantView])
 async def get_plants(
-    user_id = Depends(authorize),
+    user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
 ) -> list[PlantView]:
     async with db.execute_fetchall("""
@@ -45,20 +49,25 @@ async def get_plants(
 @router.post("")
 async def add_plant(
     name: str,
-    user_id = Depends(authorize),
+    user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-):
-    async with db.execute_insert("""
+) -> Response:
+    async with db.execute("""
         INSERT INTO Plants(Name, UserID) VALUES (?, ?) 
-    """, (name, user_id)):
+    """, (name, user_id)) as cursor:
+        plant_id = cursor.lastrowid
         await db.commit()
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        content={ "message" : f"Made plant {plant_id}"}
+    )
 
 # notes
 
 @router.get("/{plant_id}/notes", response_model=list[NoteView])
 async def get_notes(
     plant_id: int,
-    user_id = Depends(authorize),
+    user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
 ) -> list[NoteView]:
     if not await owns_plant(user_id, plant_id, db):
@@ -74,16 +83,22 @@ async def post_note(
     plant_id: int,
     note: str,
     rating: int,
-    user_id = Depends(authorize),
+    user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-):
+) -> Response:
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
-    async with db.execute_insert("""
+    async with db.execute("""
         INSERT INTO Notes(PlantID, Note, Rating, Timestamp) VALUES (?, ?, ?, ?)
-    """, (plant_id, note, rating, datetime.now())):
+    """, (plant_id, note, rating, datetime.now())) as cursor:
+        note_id = cursor.lastrowid
         await db.commit()
+
+    return Response(
+        status_code=status.HTTP_201_CREATED,
+        content={ "message" : f"Made note {note_id}"}
+    )
 
 
 async def owns_plant(user_id: int, plant_id: int, db: Connection) -> bool:
@@ -92,4 +107,5 @@ async def owns_plant(user_id: int, plant_id: int, db: Connection) -> bool:
         (user_id, plant_id)
     ) as cursor:
         row = await cursor.fetchone()
-        return bool(row[0])
+        assert row is not None
+        return bool(cast(int, row[0]))
