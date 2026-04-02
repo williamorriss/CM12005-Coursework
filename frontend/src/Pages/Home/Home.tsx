@@ -35,7 +35,8 @@ function LoggedIn({logout, session, deleteUser, navigate} :
 
             <button onClick={deleteUser}>Delete</button>
 
-            <Notes plantID={1} />
+            {/* <Notes plantID={1} /> */}
+            <p> Note: Notes have been moved to the detailed plants view page </p>
             <button onClick={() => navigate("/dev/sensors")}> dev </button>
         </>
     )
