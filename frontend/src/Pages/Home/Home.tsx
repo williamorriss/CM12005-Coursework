@@ -1,8 +1,14 @@
 import { useAuth, type User } from "../../AuthContext";
-import {type JSX, useEffect} from "react";
+import {type JSX, useEffect, useState } from "react";
 import "./Home.css";
 import Plants from "./PlantBar"
 import { useNavigate } from 'react-router-dom'
+import { api } from "../../api/api";
+import type { components } from "../../api/types"
+// import { PlantPage } from "../Dev/DevPlants"
+
+
+type PlantView = components["schemas"]["PlantView"];
 
 
 
@@ -37,41 +43,36 @@ type LoginProps = {
 interface Plant {
     name: string;
     src: string;
+    id: number;
 }
 
 let plants: Plant[] = [];
-let newPlant1 = { name: "plant1", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
-plants.push(newPlant1);
 
-let newPlant2 = { name: "plant2", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
-plants.push(newPlant2);
-
-let newPlant3 = { name: "plant3", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
-plants.push(newPlant3);
-
-let newPlant4 = { name: "plant4", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
-plants.push(newPlant4);
-
-let newPlant5 = { name: "plant5", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
-plants.push(newPlant5);
-
-let newPlant6 = { name: "plant6", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
-plants.push(newPlant6);
 
 function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.Element {
+    const [Plant, setPlants] = useState<PlantView[]>([]);
+
+    const fetchPlants = async () => {
+        const { data, error } = await api.GET("/api/plants", {});
+        if (error) alert(error);
+        if (data) setPlants(data);
+    };
+
     return (
         <>
+            {fetchPlants}
+            
             <button onClick={logout}>logout</button>
             <p>{`Hello ${session?.username}`}</p>
-            id = {session?.user_id}
+            {/* id = {session?.user_id} */}
 
             <button onClick={deleteUser} id="DeleteUser">Delete</button>
 
             {/* placeholder till endpoints from backend*/}
-
             <Plants plants={plants} />
             <button onClick={() => navigate("/dev/sensors")}> dev </button>
-            <button onClick={() => navigate("/dev/sensors")}> wacky-silly </button>
+            <button onClick={() => navigate("/dev/plants")}> add-plants? </button>
+            {/* <button onClick={() => navigate("dev")}> plantPage? </button> */}
         </>
     )
 }
