@@ -1,33 +1,52 @@
 import "./PlantPage.css";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import { api } from "../../api/api";
+import type { components } from "../../api/types";
 
-export type NoteEntry = [string, string];
-export type NoteEntries = NoteEntry[];
+type NoteView = components["schemas"]["NoteView"];
 
-export function Notes({notes}: {notes: NoteEntries}) {
+const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+export function Notes({plantID}: {plantID: number}) {
     // States
     const [newNote, setNewNote] = useState("");
-    const [currentNotes, setCurrentNotes] = useState<NoteEntries>(notes);
+    const [currentNotes, setCurrentNotes] = useState<NoteView[]>([]);
 
-    // Get dates
-    const getCurrentDate = () => {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        return `${day}/${month}/${year}`;
+    const fetchNotes = async () => {
+        const { data, error } = await api.GET("/api/plants/{plant_id}/notes", {
+            params: { path: { plant_id: plantID } },
+        });
+        if (error) alert(error);
+        if (data) setCurrentNotes(data);
     }
-    const getCurrentTime = () => {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes}`;
-    }
+    useEffect(() => {
+        if(plantID){
+            fetchNotes();
+        }
+    }, [plantID]);
 
-    //Placeholder till we get endpoint
-    const addNoteBackend = async (date: string, content: string) => {
-        console.log("Adding note to backend ", {date, content});
-        return true;
+    const addNoteBackend = async (note: NoteView) => {
+        try {
+            await api.POST("/api/plants/{plant_id}/notes", {
+                params: {
+                    path: { plant_id: plantID },
+                    query: {
+                        note: note.note,
+                        rating: note.rating,
+                    },
+                },
+            });
+        } catch (error) {
+            console.error("Error adding note to backend", error);
+        }
     }
 
     const addNote = async () => {
@@ -36,16 +55,22 @@ export function Notes({notes}: {notes: NoteEntries}) {
             return;
         }
 
-        const date = getCurrentDate();
-        const time = getCurrentTime();
-        const dateTime = `${date} ${time}`;
+        const highestID = currentNotes.reduce((max, note) => Math.max(max, note.id), 0);
+        const newID = highestID + 1;
 
-        const newNotes: NoteEntries = [...currentNotes, [dateTime, newNote]];
+        const newNoteView: NoteView = {
+            id: newID,
+            note: newNote,
+            rating: 5,
+            timestamp: new Date().toISOString().replace("T", " ").slice(0, 23),
+        }
+        const newNotes = [newNoteView, ...currentNotes];
+
         setCurrentNotes(newNotes);
         setNewNote("");
 
         try {
-            await addNoteBackend(date, newNote);
+            await addNoteBackend(newNoteView);
         } catch (error) {
             console.error("Error adding note to backend", error);
         }
@@ -60,11 +85,11 @@ export function Notes({notes}: {notes: NoteEntries}) {
     };
 
     // Displaying each note in the list as a div
-    const noteList = currentNotes.map((note, index) => {
+    const noteList = currentNotes.map((note) => {
         return (
-            <div key={index} style={{marginBottom: "12px", textAlign: "left"}}>
-                <strong className="text">{note[0]}</strong>
-                <p className="text">{note[1]}</p>
+            <div key={note.id} style={{marginBottom: "12px", textAlign: "left"}}>
+                <strong className="text">{formatDateTime(note.timestamp)}</strong>
+                <p className="text">{note.note}</p>
             </div>
         )
     })
