@@ -6,6 +6,7 @@ from aiosqlite import Connection, Row
 from fastapi.responses import Response
 from starlette.responses import JSONResponse
 
+import db
 from db import get_db
 from fastapi import APIRouter, Depends, status, UploadFile, File
 from auth import authorize
@@ -78,7 +79,7 @@ async def add_plant(
 
     plant_id = cast(int, row[0]) if (row := await db.execute_insert(
         "INSERT INTO Plants(Name, UserID, ImageID) VALUES (?, ?, ?)"
-        , (name, user_id, image_id)
+    , (name, user_id, image_id)
     )) else None
 
     if plant_id is None:
@@ -90,6 +91,20 @@ async def add_plant(
         name=name,
         image_url = url
     )
+
+@router.delete("/{plant_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_plant(
+    plant_id: int,
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db)
+):
+    if not await owns_plant(user_id, plant_id, db):
+        raise HTTPException(status_code=404, detail="Plants does not belong to this user")
+
+    image_id = await delete_image_resource(plant_id, db)
+    await db.execute("DELETE FROM Images WHERE ImageID = ?", (image_id,))
+    await db.execute("DELETE FROM Plants WHERE PlantID = ?", (plant_id,))
+    db.commit()
 
 # notes
 
@@ -155,6 +170,24 @@ async def make_static_url(api_key: str, file: UploadFile) -> tuple[str, str]:
     delete_url = data["delete_url"]
     url = data["url"]
     return (url, delete_url)
+
+
+async def delete_image_resource(plant_id: int, db: Connection) -> int:
+    row = await db.execute_fetchall("SELECT ImageID FROM Plants WHERE ID = ?", (plant_id,))
+    if row is None:
+        # No associated image
+        return
+    image_id = cast(int, row[0])
+    delete_url = await db.execute_fetchall("SELECT DeleteUrl FROM Images WHERE ID = ?", (image_id,)
+    if delete_url is None:
+        raise HTTPException(status_code=500, detail="Image resource has not delete URL")
+
+    async with httpx.AsyncClient() as client:
+        response = await client.delete(delete_url)
+        if response.is_error:
+            raise HTTPException(status_code=500, detail="Could not delete image")
+
+    return image_id
 
 async def owns_plant(user_id: int, plant_id: int, db: Connection) -> bool:
     async with db.execute(
