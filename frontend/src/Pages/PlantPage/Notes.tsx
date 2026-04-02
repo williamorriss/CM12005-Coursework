@@ -24,7 +24,8 @@ export function Notes({notes}: {notes: NoteEntries}) {
         return `${hours}:${minutes}`;
     }
 
-    //Placeholder till we get endpoint
+    // TODO: Placeholder till we get endpoint
+    // UPDATE: POST /api/plants/{plant_id}/notes
     const addNoteBackend = async (date: string, content: string) => {
         console.log("Adding note to backend ", {date, content});
         return true;
