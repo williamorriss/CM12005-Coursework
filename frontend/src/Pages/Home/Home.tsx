@@ -1,35 +1,32 @@
 import { useAuth, type User } from "../../AuthContext";
-import {type JSX, useEffect} from "react";
-
+import { type JSX, useEffect } from "react";
 import { Notes } from "../PlantPage/Notes";
 import { useNavigate } from 'react-router-dom'
 
-function Home() : JSX.Element {
+export function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
-
-    useEffect(() => {getSession().then()}, []);
+    useEffect(() => { getSession().then() }, []);
     console.log(session);
     return (
         <>
             {isLoggedIn()
-                ?  <LoggedIn session={session!} deleteUser={deleteUser} navigate={navigate} logout={logout} />
-                : <LoggedOut login={login}/>
+                ? <LoggedIn session={session!} deleteUser={deleteUser} navigate={navigate} logout={logout} />
+                : <LoggedOut login={login} />
             }
         </>
     )
-
 }
 
-
-function LoggedIn({logout, session, deleteUser, navigate} :
-{
+type LoginProps = {
     logout: () => void,
     session: User,
     deleteUser: () => void,
     navigate: (destination: string) => void,
-}) : JSX.Element {
+}
+
+function LoggedIn({ logout, session, deleteUser, navigate }: LoginProps): JSX.Element {
     return (
         <>
             <button onClick={logout}>logout</button>
@@ -39,12 +36,16 @@ function LoggedIn({logout, session, deleteUser, navigate} :
             <button onClick={deleteUser}>Delete</button>
 
             <Notes notes={[]} />
-            <button onClick={() => navigate("/dev/sensors")}> dev </button>
+            <button onClick={() => navigate("/dev/sensors")}> wacky-silly </button>
         </>
     )
 }
 
-function LoggedOut({login}: { login: () => void }) : JSX.Element {
+type LogoutProps = {
+    login: () => void,
+}
+
+function LoggedOut({ login }: LogoutProps): JSX.Element {
     return (
         <>
             <button onClick={login}>login</button>
