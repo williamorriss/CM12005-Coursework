@@ -1,5 +1,7 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
+import os
+
 from aiosqlite import Connection, OperationalError
 from db import get_db
 from fastapi.requests import Request
@@ -32,7 +34,7 @@ def get_origin(request: Request) -> str:
     return cast(str, request.app.state.ORIGIN)
 
 def get_auth_key(request: Request) -> str:
-    return cast(str, request.app.state.KEY)
+    return cast(str, request.app.state.JWT_SIGNING_KEY)
 
 def authorize(request: Request) -> int:
     auth_token = request.cookies.get("auth-token")

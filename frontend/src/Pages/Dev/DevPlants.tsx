@@ -78,12 +78,17 @@ function NoteViewComponent({ note }: { note: NoteView }): JSX.Element {
 
 function AddPlantForm(): JSX.Element {
     const handleSubmit = async (form: FormData) => {
+        const pictureFile = form.get("picture")! as File;
+        const formData = new FormData();
+        formData.append(
+            "picture",
+            pictureFile,
+            pictureFile.name
+        );
+        formData.append("name", form.get("name") as string);
+
         const { error } = await api.POST("/api/plants", {
-            params: {
-                query: {
-                    name: form.get("name") as string,
-                },
-            },
+            body: formData as any,
         });
 
         if (error) alert(error);
@@ -93,7 +98,8 @@ function AddPlantForm(): JSX.Element {
     return (
         <form action={handleSubmit}>
             <h4>Add Plant</h4>
-            <input type="text" name="name" placeholder="Plant Name" />
+            <input type="text" name="name" placeholder="Plant Name"/>
+            <input type="file" name="picture"/>
             <button type="submit">Add Plant</button>
         </form>
     );
@@ -101,15 +107,11 @@ function AddPlantForm(): JSX.Element {
 
 function AddNoteForm({ plantID }: { plantID: number }): JSX.Element {
     const handleSubmit = async (form: FormData) => {
-
         const { error } = await api.POST("/api/plants/{plant_id}/notes", {
             params: {
                 path: { plant_id: plantID },
-                query: {
-                    note: form.get("note") as string,
-                    rating: 5,
-                },
             },
+            body: form as any
         });
 
         if (error) alert(error);

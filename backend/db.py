@@ -2,10 +2,9 @@ from typing import AsyncGenerator
 from aiosqlite import connect, Connection, Row
 from fastapi.requests import Request
 
-
 DBNAME = "test.db"
 
-async def get_db(_r: Request) -> AsyncGenerator[Connection, None]:
+async def get_db() -> AsyncGenerator[Connection, None]:
     async with connect("test.db") as db:
         db.row_factory = Row
         yield db

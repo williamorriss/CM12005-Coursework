@@ -6,7 +6,8 @@ from typing import cast
 from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
 from fastapi.responses import Response
-from fastapi import status
+from fastapi import status, Form
+from fastapi.responses import JSONResponse
 
 from . import Sensor, Sample
 from aiosqlite import Connection, Row
@@ -24,7 +25,7 @@ def get_sensors(request: Request) -> dict[int, Sensor]:
 
 class SensorView(BaseModel):
     sensor_id: int
-    plant_id: int
+    plant_id: int | None
     name: str
 
     @staticmethod
@@ -54,18 +55,20 @@ async def get_user_sensors(
     """, (user_id,)) as rows:
         return [SensorView.from_row(row) for row in rows]
 
-
-@router.post("/{sensor_id}/session")
+@router.post("/{sensor_id}/session", status_code=status.HTTP_201_OK)
 async def activate_sensor(
     sensor_id: int,
     _user_id: int = Depends(authorize), # authorized endpoint
     sensors: dict[int, Sensor] = Depends(get_sensors),
     db: Connection = Depends(get_db),
-) -> Response:
+) -> JSONResponse:
     if sensor_id in sensors:
         # already running
         sensors[sensor_id].start()
-        return Response(status_code=status.HTTP_201_CREATED)
+        return JSONResponse(
+            status_code=status.HTTP_200_CREATED,
+            content={"message" : "No change; sensor already running"}
+        )
 
     async with db.execute("""
         SELECT PlantID, Name FROM Sensors WHERE ID = ? 
@@ -79,11 +82,12 @@ async def activate_sensor(
     sensor.start()
     sensors[sensor_id] = sensor
 
-    return Response(status_code=status.HTTP_201_CREATED, content={"message": f"Started sensor {sensor_id}"})
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content= {"message" : f"Sensor {sensor_id} activated"}
+    )
 
-
-
-@router.delete("/{sensor_id}/session")
+@router.delete("/{sensor_id}/session", status_code=status.HTTP_200)
 async def deactivate_sensor(
     sensor_id: int,
     _user_id: int = Depends(authorize), # authorized endpoint
@@ -93,30 +97,42 @@ async def deactivate_sensor(
         raise HTTPException(status_code=404, detail="Sensor not found")
 
     sensor = sensors[sensor_id]
-    sensor.stop()
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
+    if not sensor.is_running():
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED,
+            content={"message": f"Sensor {sensor_id} not currently active"},
+        )
 
-@router.post("")
+    sensor.stop()
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={ "message" : f"Sensor {sensor_id} deactivated" }
+    )
+
+@router.post("", status_code=status.HTTP_201_CREATED)
 async def add_sensor(
-        name: str,
-        plant_id: int | None = None,
-        user_id: int = Depends(authorize),
-        db: Connection = Depends(get_db),
-) -> Response:
+    name: str = Form(...),
+    plant_id: int | None = Form(...),
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db),
+) -> SensorView:
     async with db.execute(
-            "INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)",
-            (user_id, plant_id, name)
+        "INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)",
+        (user_id, plant_id, name)
     ) as cursor:
         await db.commit()
         sensor_id = cursor.lastrowid
 
-    return Response(
-        status_code=status.HTTP_201_CREATED,
-        content={"message": f"Created sensor {sensor_id}", "id": sensor_id
-         }
+    assert sensor_id is not None
+
+    return SensorView(
+        sensor_id = sensor_id,
+        name=name,
+        plant_id=plant_id,
     )
 
-@router.delete("/{sensor_id}")
+@router.delete("/{sensor_id}", status_code=status.HTTP_200)
 async def del_sensor (
     sensor_id: int,
     _user_id: int = Depends(authorize),
@@ -127,9 +143,9 @@ async def del_sensor (
     """, (sensor_id,)) :
         await db.commit()
 
-    return Response(
+    return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={ "message" : f"Deleted sensor {sensor_id}"}
+        content={"message" : f"Sensor {sensor_id} deleted"}
     )
 
 # @router.patch("/{sensor_id}")
