@@ -1,9 +1,11 @@
 import { useAuth, type User } from "../../AuthContext";
 import {type JSX, useEffect} from "react";
 import "./Home.css";
-// import { Notes } from "../PlantPage/Notes";
 import Plants from "./PlantBar"
 import { useNavigate } from 'react-router-dom'
+
+
+
 
 export function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
@@ -53,6 +55,9 @@ plants.push(newPlant4);
 let newPlant5 = { name: "plant5", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
 plants.push(newPlant5);
 
+let newPlant6 = { name: "plant6", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
+plants.push(newPlant6);
+
 function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.Element {
     return (
         <>
@@ -60,9 +65,10 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <p>{`Hello ${session?.username}`}</p>
             id = {session?.user_id}
 
-            <button onClick={deleteUser}>Delete</button>
+            <button onClick={deleteUser} id="DeleteUser">Delete</button>
 
             {/* placeholder till endpoints from backend*/}
+
             <Plants plants={plants} />
             <button onClick={() => navigate("/dev/sensors")}> dev </button>
             <button onClick={() => navigate("/dev/sensors")}> wacky-silly </button>

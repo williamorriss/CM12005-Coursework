@@ -12,3 +12,9 @@
   /* background-color: #3fc87f; */
 }
 
+
+#DeleteUser {
+  position: relative;
+  align-self: left;
+  float: left;   
+}
