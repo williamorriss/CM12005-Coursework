@@ -1,7 +1,8 @@
 import { useAuth, type User } from "../../AuthContext";
 import {type JSX, useEffect} from "react";
 import "./Home.css";
-import { Notes } from "../PlantPage/Notes";
+// import { Notes } from "../PlantPage/Notes";
+import Plants from "./PlantBar"
 import { useNavigate } from 'react-router-dom'
 
 export function Home() : JSX.Element {
@@ -30,6 +31,28 @@ type LoginProps = {
     navigate: (destination: string) => void,
 }
 
+
+interface Plant {
+    name: string;
+    src: string;
+}
+
+let plants: Plant[] = [];
+let newPlant1 = { name: "plant1", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
+plants.push(newPlant1);
+
+let newPlant2 = { name: "plant2", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
+plants.push(newPlant2);
+
+let newPlant3 = { name: "plant3", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
+plants.push(newPlant3);
+
+let newPlant4 = { name: "plant4", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
+plants.push(newPlant4);
+
+let newPlant5 = { name: "plant5", src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9o9NlESDJDZsD51LdGdMt1miatn40Ktfxnw&s"}
+plants.push(newPlant5);
+
 function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.Element {
     return (
         <>
@@ -40,6 +63,9 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <button onClick={deleteUser}>Delete</button>
 
             {/* <Notes notes={[]} /> */}
+
+            {/* placeholder till endpoints from backend*/}
+            <Plants plants={plants} />
             <button onClick={() => navigate("/dev/sensors")}> dev </button>
             <button onClick={() => navigate("/dev/sensors")}> wacky-silly </button>
         </>

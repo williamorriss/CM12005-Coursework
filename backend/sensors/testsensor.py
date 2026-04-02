@@ -6,6 +6,7 @@ from . import Sensor, Sample
 from db import DBNAME
 from random import randrange
 
+
 def fake_sample() -> Sample:
     temperature = randrange(-10, 40)
     ph = randrange(0, 14)
@@ -67,7 +68,7 @@ class TestSensor(Sensor):
 
     @staticmethod
     def _collate(samples: np.ndarray) -> Sample:
-        return Sample(
+        return Sample()
 
 from random import randrange
 from datetime import datetime, timedelta
@@ -143,6 +144,7 @@ class TestSensor(Sensor):
             await db.execute(
                 "INSERT INTO Logs (SensorID, PlantID, temperature, pH, CollectedTimestamp) VALUES (?, ?, ?, ?, ?)",
                 (self._sensor_id, self._plant_id, temp, ph, timestamp)
+            )
 
     async def _db_writer(self, samples: np.ndarray) -> None:
         collated_sample = TestSensor._collate_queue(samples)
