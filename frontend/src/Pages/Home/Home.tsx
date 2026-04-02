@@ -62,8 +62,6 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
 
             <button onClick={deleteUser}>Delete</button>
 
-            {/* <Notes notes={[]} /> */}
-
             {/* placeholder till endpoints from backend*/}
             <Plants plants={plants} />
             <button onClick={() => navigate("/dev/sensors")}> dev </button>
