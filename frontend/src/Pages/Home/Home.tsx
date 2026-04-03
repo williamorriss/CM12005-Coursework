@@ -1,6 +1,5 @@
 import { useAuth, type User } from "../../AuthContext";
-import {type JSX, useEffect} from "react";
-
+import { type JSX, useEffect } from "react";
 import { Notes } from "../PlantPage/Notes";
 import { useNavigate } from 'react-router-dom'
 
@@ -8,14 +7,13 @@ function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
-
-    useEffect(() => {getSession().then()}, []);
+    useEffect(() => { getSession().then() }, []);
     console.log(session);
     return (
         <>
             {isLoggedIn()
-                ?  <LoggedIn session={session!} deleteUser={deleteUser} navigate={navigate} logout={logout} />
-                : <LoggedOut login={login}/>
+                ? <LoggedIn session={session!} deleteUser={deleteUser} navigate={navigate} logout={logout} />
+                : <LoggedOut login={login} />
             }
         </>
     )
@@ -38,7 +36,9 @@ function LoggedIn({logout, session, deleteUser, navigate} :
 
             <button onClick={deleteUser}>Delete</button>
 
-            <Notes notes={[]} />
+            {/* <Notes plantID={1} /> */}
+            <p> Note: Notes have been moved to the detailed plants view page </p>
+            <button onClick={() => navigate("/dev/sensors")}> dev </button>
             <button onClick={() => navigate("/dev")}> dev </button>
         </>
     )

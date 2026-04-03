@@ -5,7 +5,7 @@ import type { components } from "../../api/types";
 type PlantView = components["schemas"]["PlantView"];
 type NoteView = components["schemas"]["NoteView"];
 
-function PlantPage(): JSX.Element {
+function DevPlantPage(): JSX.Element {
     const [plantID, setPlantID] = useState<number>(0);
     const [plants, setPlants] = useState<PlantView[]>([]);
     const [notes, setNotes] = useState<NoteView[]>([]);
@@ -142,4 +142,4 @@ function AddNoteForm({ plantID }: { plantID: number }): JSX.Element {
     );
 }
 
-export default PlantPage;
+export default DevPlantPage
