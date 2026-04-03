@@ -39,7 +39,7 @@ function LoggedIn({logout, session, deleteUser, navigate} :
             <button onClick={deleteUser}>Delete</button>
 
             <Notes notes={[]} />
-            <button onClick={() => navigate("/dev/sensors")}> dev </button>
+            <button onClick={() => navigate("/dev")}> dev </button>
         </>
     )
 }

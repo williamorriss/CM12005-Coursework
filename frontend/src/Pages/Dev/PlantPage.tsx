@@ -33,18 +33,16 @@ function PlantPage(): JSX.Element {
                 <button onClick={fetchNotes}> get notes </button>
             </section>
 
-            <section>
-                {plants.map((plant) => (
-                    <PlantViewComponent key={plant.id} plant={plant} />
-                ))}
-                {notes.map((note) => (
-                    <NoteViewComponent key={note.id} note={note} />
-                ))}
-            </section>
 
-            <hr />
             <AddPlantForm />
             <AddNoteForm plantID={plantID} />
+
+            <section>
+                {plants.map((plant) => (
+                    <PlantViewComponent key={plant.id} plant={plant} notes={notes.filter((note) => note.plant_id=plant.id)} />
+                ))}
+
+            </section>
         </div>
     );
 }
@@ -60,10 +58,26 @@ function InputPlant({ setPlantID }: { setPlantID: (id: number) => void }): JSX.E
     );
 }
 
-function PlantViewComponent({ plant }: { plant: PlantView }): JSX.Element {
+function PlantViewComponent({ plant, notes }: { plant: PlantView, notes: NoteView[] }): JSX.Element {
     return (
         <div>
             <strong>Name:</strong> {plant.name} | <strong>ID:</strong> {plant.id}
+            {plant.image_url && <img src={plant.image_url} alt={plant.name} style={{ width: "200px", height: "auto" }}/>}
+            <section>
+                <strong> NOTES </strong>
+                {notes.map((note) => (
+                    <NoteViewComponent key={note.id} note={note} />
+                ))}
+            </section>
+            <button onClick={
+                async () => await api.DELETE("/api/plants/{plant_id}", {
+                    params : {
+                        path : {
+                            plant_id : plant.id
+                        }
+                    }
+                })
+            }> Delete </button>
         </div>
     );
 }
@@ -122,6 +136,7 @@ function AddNoteForm({ plantID }: { plantID: number }): JSX.Element {
         <form action={handleSubmit}>
             <h4>Add Note for Plant {plantID}</h4>
             <input type="text" name="note" placeholder="Write a note..." />
+            <input type="number" name="rating" />
             <button type="submit">Add Note</button>
         </form>
     );

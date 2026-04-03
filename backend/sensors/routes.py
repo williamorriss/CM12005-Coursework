@@ -55,7 +55,7 @@ async def get_user_sensors(
     """, (user_id,)) as rows:
         return [SensorView.from_row(row) for row in rows]
 
-@router.post("/{sensor_id}/session", status_code=status.HTTP_201_OK)
+@router.post("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def activate_sensor(
     sensor_id: int,
     _user_id: int = Depends(authorize), # authorized endpoint
@@ -66,7 +66,7 @@ async def activate_sensor(
         # already running
         sensors[sensor_id].start()
         return JSONResponse(
-            status_code=status.HTTP_200_CREATED,
+            status_code=status.HTTP_200_OK,
             content={"message" : "No change; sensor already running"}
         )
 
@@ -87,7 +87,7 @@ async def activate_sensor(
         content= {"message" : f"Sensor {sensor_id} activated"}
     )
 
-@router.delete("/{sensor_id}/session", status_code=status.HTTP_200)
+@router.delete("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def deactivate_sensor(
     sensor_id: int,
     _user_id: int = Depends(authorize), # authorized endpoint
@@ -132,7 +132,7 @@ async def add_sensor(
         plant_id=plant_id,
     )
 
-@router.delete("/{sensor_id}", status_code=status.HTTP_200)
+@router.delete("/{sensor_id}", status_code=status.HTTP_200_OK)
 async def del_sensor (
     sensor_id: int,
     _user_id: int = Depends(authorize),

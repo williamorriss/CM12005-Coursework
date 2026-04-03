@@ -3,8 +3,8 @@ from typing import cast
 from fastapi import Request, Form
 
 from aiosqlite import Connection, Row
-from fastapi.responses import Response
-from starlette.responses import JSONResponse
+from fastapi.responses import JSONResponse
+from starlette.responses import Response
 
 import db
 from db import get_db
@@ -35,6 +35,7 @@ class PlantView(BaseModel):
 
 class NoteView(BaseModel):
     id: int
+    plant_id: int
     note: str
     rating: int
     timestamp: datetime
@@ -43,9 +44,10 @@ class NoteView(BaseModel):
     def from_row(row: Row) -> "NoteView":
         return NoteView(
             id=row["ID"],
+            plant_id=row["PlantID"],
             note=row["Note"],
-            rating=row["rating"],
-            timestamp=row["timestamp"]
+            rating=row["Rating"],
+            timestamp=row["Timestamp"]
         )
 
 @router.get("", response_model=list[PlantView])
@@ -69,21 +71,21 @@ async def add_plant(
     db: Connection = Depends(get_db)
 ) -> PlantView:
     url, delete_url = await make_static_url(imgbb_api_key, picture)
-    image_id  = row[0] if (row := await db.execute_insert(
+    if (row := await db.execute_insert(
         "INSERT INTO Images(URL, DeleteURL) VALUES (?, ?)",
         (url, delete_url)
-    )) else None
-
-    if image_id is None:
+    )) is None:
         raise HTTPException(status_code=500, detail="Failed to create image resource")
 
-    plant_id = cast(int, row[0]) if (row := await db.execute_insert(
+    image_id: int = row[0]
+
+    if (row := await db.execute_insert(
         "INSERT INTO Plants(Name, UserID, ImageID) VALUES (?, ?, ?)"
     , (name, user_id, image_id)
-    )) else None
-
-    if plant_id is None:
+    )) is None:
         raise HTTPException(status_code=500, detail="Failed to create plant")
+
+    plant_id = row[0]
 
     await db.commit()
     return PlantView(
@@ -97,14 +99,14 @@ async def delete_plant(
     plant_id: int,
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-):
+) -> Response:
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
-    image_id = await delete_image_resource(plant_id, db)
-    await db.execute("DELETE FROM Images WHERE ImageID = ?", (image_id,))
-    await db.execute("DELETE FROM Plants WHERE PlantID = ?", (plant_id,))
-    db.commit()
+    await delete_image(plant_id, db)
+    await db.execute("DELETE FROM Plants WHERE ID = ?", (plant_id,))
+    await db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 # notes
 
@@ -117,9 +119,9 @@ async def get_notes(
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
-    async with db.execute_fetchall("""
-       SELECT ID, Note, Rating, Timestamp FROM Notes WHERE PlantID = ?
-       """, (user_id, )) as notes:
+    async with db.execute_fetchall(
+       "SELECT ID, PlantID, Note, Rating, Timestamp FROM Notes WHERE PlantID = ?"
+       , (plant_id, )) as notes:
         return [NoteView.from_row(note) for note in notes]
 
 @router.post("/{plant_id}/notes", status_code=status.HTTP_201_CREATED)
@@ -133,16 +135,17 @@ async def post_note(
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
-    async with db.execute_insert("""
-        INSERT INTO Notes(PlantID, Note, Rating) VALUES (?, ?, ?, ?) RETURNING ID, Timestamp
-    """, (plant_id, note, rating, datetime.now())) as row:
-        assert row is not None
-        note_id = row[0]
-        timestamp = row[1]
+    async with db.execute(
+        "INSERT INTO Notes(PlantID, Note, Rating) VALUES (?, ?, ?) RETURNING ID, Timestamp"
+    , (plant_id, note, rating)) as cursor:
+        if (row := await cursor.fetchone()) is None:
+            raise HTTPException(status_code=400, detail="Failed to create note")
         await db.commit()
 
+    note_id, timestamp = row
     return NoteView(
         id=note_id,
+        plant_id=plant_id,
         note=note,
         rating=rating,
         timestamp=timestamp
@@ -172,22 +175,28 @@ async def make_static_url(api_key: str, file: UploadFile) -> tuple[str, str]:
     return (url, delete_url)
 
 
-async def delete_image_resource(plant_id: int, db: Connection) -> int:
-    row = await db.execute_fetchall("SELECT ImageID FROM Plants WHERE ID = ?", (plant_id,))
+async def delete_image(plant_id: int, db: Connection) -> None:
+    async with db.execute("SELECT ImageID FROM Plants WHERE ID = ?", (plant_id,)) as cursor:
+        row = await cursor.fetchone()
     if row is None:
-        # No associated image
         return
-    image_id = cast(int, row[0])
-    delete_url = await db.execute_fetchall("SELECT DeleteUrl FROM Images WHERE ID = ?", (image_id,)
-    if delete_url is None:
-        raise HTTPException(status_code=500, detail="Image resource has not delete URL")
+
+    image_id: int = row[0]
+
+    async with db.execute("SELECT DeleteUrl FROM Images WHERE ID = ?", (image_id,)) as cursor:
+        row = await cursor.fetchone()
+    if row is None:
+        raise HTTPException(status_code=500, detail="Image resource has no delete URL")
+
+    delete_url: str = row[0]
 
     async with httpx.AsyncClient() as client:
         response = await client.delete(delete_url)
         if response.is_error:
             raise HTTPException(status_code=500, detail="Could not delete image")
 
-    return image_id
+    await db.execute("DELETE FROM Images WHERE ID = ?", (image_id,))
+    await db.commit()
 
 async def owns_plant(user_id: int, plant_id: int, db: Connection) -> bool:
     async with db.execute(
