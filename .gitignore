@@ -138,7 +138,6 @@ yarn.lock
 *.sw?
 
 # IntelliJ project files
-.idea
 *.iml
 out
 gen
@@ -153,9 +152,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -201,7 +198,6 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -243,7 +239,6 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/

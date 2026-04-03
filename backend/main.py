@@ -30,10 +30,13 @@ app.add_middleware(
     allow_headers=["AUTHORIZATION", "CONTENT_TYPE", "COOKIE", "ACCEPT"],
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
 )
-
-signing_key = os.getenv("SIGNING_KEY")
-imgbb_key = os.getenv("IMGBB_KEY")
-assert signing_key and imgbb_key
+#
+# signing_key = os.getenv("SIGNING_KEY")
+# imgbb_key = os.getenv("IMGBB_KEY")
+# assert signing_key and imgbb_key
+signing_key = "aeui4baibviruabirbviruiadbiburbaiurbaiuriabir213io3u4iu23o4u23oiu4"
+# this is on a burner account but for future reference I can see *all* uploaded files ;-;
+imgbb_key = "f7616c52863e992deb9e183c38a22468"
 
 # this is kind of terrible and should be made into a config class so they
 # actually have types
