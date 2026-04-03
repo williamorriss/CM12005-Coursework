@@ -2,8 +2,14 @@ import "./PlantPage.css";
 import {useEffect, useState} from "react";
 import { api } from "../../api/api";
 import type { components } from "../../api/types";
+import * as React from "react";
 
 type NoteView = components["schemas"]["NoteView"];
+
+type NewNote = {
+    note: string;
+    rating: number;
+}
 
 const formatDateTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -17,7 +23,7 @@ const formatDateTime = (dateString: string) => {
 
 export function Notes({plantID}: {plantID: number}) {
     // States
-    const [newNote, setNewNote] = useState("");
+    const [newText, setNewText] = useState("");
     const [currentNotes, setCurrentNotes] = useState<NoteView[]>([]);
 
     const fetchNotes = async () => {
@@ -29,60 +35,78 @@ export function Notes({plantID}: {plantID: number}) {
     }
     useEffect(() => {
         if(plantID){
-            fetchNotes();
+            fetchNotes().then();
         }
     }, [plantID]);
 
-    const addNoteBackend = async (note: NoteView) => {
-        try {
-            await api.POST("/api/plants/{plant_id}/notes", {
-                params: {
-                    path: { plant_id: plantID },
-                    query: {
-                        note: note.note,
-                        rating: note.rating,
-                    },
-                },
-            });
-        } catch (error) {
-            console.error("Error adding note to backend", error);
+    const addNoteBackend = async (plantID: number, note: NewNote) : Promise<NoteView | null> => {
+        const sendForm = new FormData();
+        sendForm.append("note", note.note)
+        sendForm.append("rating", "5")
+        const { data, error } = await api.POST("/api/plants/{plant_id}/notes", {
+            params: {
+                path: {plant_id: plantID},
+            },
+            body: sendForm as any,
+        });
+
+        if (error) {
+            alert(error);
+            return null;
         }
+
+        return data as NoteView;
     }
 
     const addNote = async () => {
         // Checks to see if new note is empty
-        if(!newNote.trim()){
+        if(!newText.trim()){
             return;
         }
 
-        const highestID = currentNotes.reduce((max, note) => Math.max(max, note.id), 0);
-        const newID = highestID + 1;
-
-        const newNoteView: NoteView = {
-            id: newID,
-            note: newNote,
+        const newNote: NewNote = {
+            note: newText,
             rating: 5,
-            timestamp: new Date().toISOString().replace("T", " ").slice(0, 23),
         }
-        const newNotes = [newNoteView, ...currentNotes];
 
-        setCurrentNotes(newNotes);
-        setNewNote("");
+        const newNoteView = await addNoteBackend(plantID, newNote);
+        if (newNoteView != null) {
+            setCurrentNotes([...currentNotes, newNoteView]);
+            setNewText("");
+
+        }
 
         try {
-            await addNoteBackend(newNoteView);
+
         } catch (error) {
             console.error("Error adding note to backend", error);
         }
     }
 
     // Add note on enter
-    const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyPress = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            addNote();
+            await addNote();
         }
     };
+
+    const deleteNote = async (id: number) => {
+        const { error} = await api.DELETE("/api/plants/{plant_id}/notes/{note_id}", {
+            params : {
+                path : {
+                    plant_id : plantID,
+                    note_id: id,
+                }
+            }
+        });
+        if (error) {
+            alert(error);
+            return null;
+        }
+
+        setCurrentNotes(currentNotes.filter(note => note.id !== id));
+    }
 
     // Displaying each note in the list as a div
     const noteList = currentNotes.map((note) => {
@@ -90,6 +114,7 @@ export function Notes({plantID}: {plantID: number}) {
             <div key={note.id} style={{marginBottom: "12px", textAlign: "left"}}>
                 <strong className="text">{formatDateTime(note.timestamp)}</strong>
                 <p className="text">{note.note}</p>
+                <button onClick={() => deleteNote(note.id)}> Delete </button>
             </div>
         )
     })
@@ -110,15 +135,15 @@ export function Notes({plantID}: {plantID: number}) {
                 <textarea
                     className="note-input"
                     placeholder="Add a note..."
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
                     onKeyDown={handleKeyPress}
                     rows={1}
                 />
                 <button 
                     className="note-button" 
                     onClick={addNote}
-                    disabled={!newNote.trim()}
+                    disabled={!newText.trim()}
                 >
                     Add Note
                 </button>

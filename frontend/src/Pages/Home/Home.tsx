@@ -1,7 +1,7 @@
 import { useAuth, type User } from "../../AuthContext";
 import { type JSX, useEffect } from "react";
-import { Notes } from "../PlantPage/Notes";
 import { useNavigate } from 'react-router-dom'
+import PlantPanel from "./PlantPanel.tsx";
 
 function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
@@ -37,8 +37,8 @@ function LoggedIn({logout, session, deleteUser, navigate} :
             <button onClick={deleteUser}>Delete</button>
 
             {/* <Notes plantID={1} /> */}
+            <PlantPanel />
             <p> Note: Notes have been moved to the detailed plants view page </p>
-            <button onClick={() => navigate("/dev/sensors")}> dev </button>
             <button onClick={() => navigate("/dev")}> dev </button>
         </>
     )

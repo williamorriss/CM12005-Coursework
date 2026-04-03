@@ -194,6 +194,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/plants/{plant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plants */
+        get: operations["get_plants_api_plants__plant_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Plant */
+        delete: operations["delete_plant_api_plants__plant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/plants/{plant_id}/notes": {
         parameters: {
             query?: never;
@@ -207,6 +225,23 @@ export interface paths {
         /** Post Note */
         post: operations["post_note_api_plants__plant_id__notes_post"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plants/{plant_id}/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Note */
+        delete: operations["delete_note_api_plants__plant_id__notes__note_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -233,6 +268,27 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** Body_add_plant_api_plants_post */
+        Body_add_plant_api_plants_post: {
+            /** Name */
+            name: string;
+            /** Picture */
+            picture: string;
+        };
+        /** Body_add_sensor_api_sensors_post */
+        Body_add_sensor_api_sensors_post: {
+            /** Name */
+            name: string;
+            /** Plant Id */
+            plant_id: number | null;
+        };
+        /** Body_post_note_api_plants__plant_id__notes_post */
+        Body_post_note_api_plants__plant_id__notes_post: {
+            /** Note */
+            note: string;
+            /** Rating */
+            rating: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -242,6 +298,8 @@ export interface components {
         NoteView: {
             /** Id */
             id: number;
+            /** Plant Id */
+            plant_id: number;
             /** Note */
             note: string;
             /** Rating */
@@ -258,13 +316,15 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+            /** Image Url */
+            image_url: string | null;
         };
         /** SensorView */
         SensorView: {
             /** Sensor Id */
             sensor_id: number;
             /** Plant Id */
-            plant_id: number;
+            plant_id: number | null;
             /** Name */
             name: string;
         };
@@ -453,23 +513,24 @@ export interface operations {
     };
     add_sensor_api_sensors_post: {
         parameters: {
-            query: {
-                name: string;
-                plant_id?: number | null;
-            };
+            query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_add_sensor_api_sensors_post"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SensorView"];
                 };
             };
             /** @description Validation Error */
@@ -629,11 +690,44 @@ export interface operations {
     };
     add_plant_api_plants_post: {
         parameters: {
-            query: {
-                name: string;
-            };
+            query?: never;
             header?: never;
             path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_plant_api_plants_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantView"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plants_api_plants__plant_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -644,8 +738,37 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["PlantView"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_plant_api_plants__plant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -691,26 +814,57 @@ export interface operations {
     };
     post_note_api_plants__plant_id__notes_post: {
         parameters: {
-            query: {
-                note: string;
-                rating: number;
-            };
+            query?: never;
             header?: never;
             path: {
                 plant_id: number;
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_post_note_api_plants__plant_id__notes_post"];
+            };
+        };
         responses: {
             /** @description Successful Response */
-            200: {
+            201: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["NoteView"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_note_api_plants__plant_id__notes__note_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+                note_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

@@ -62,22 +62,43 @@ async def get_plants(
     """, (user_id, )) as plants:
         return [PlantView.from_row(row) for row in plants]
 
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.get("/{plant_id}", response_model=PlantView)
+async def get_plants(
+    plant_id: int,
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db)
+) -> PlantView:
+    if not await owns_plant(user_id, plant_id, db):
+        raise HTTPException(status_code=401, detail="Plant does not belong to this user")
+
+    async with db.execute("""
+       SELECT Plants.ID as ID, Name, URL as ImageURL FROM Plants
+        LEFT JOIN Images ON Plants.ImageID = Images.ID
+       WHERE Plants.ID = ?
+    """, (plant_id, )) as cursor:
+        row = await cursor.fetchone()
+        if row is None:
+            raise HTTPException(status_code=404, detail="Plant does not exist")
+        return PlantView.from_row(row)
+
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=PlantView)
 async def add_plant(
     name: str = Form(...),
-    picture: UploadFile = File(...),
+    picture: UploadFile | None = File(...),
     user_id: int = Depends(authorize),
     imgbb_api_key: str = Depends(get_imgbb_api_key),
     db: Connection = Depends(get_db)
 ) -> PlantView:
-    url, delete_url = await make_static_url(imgbb_api_key, picture)
-    if (row := await db.execute_insert(
-        "INSERT INTO Images(URL, DeleteURL) VALUES (?, ?)",
-        (url, delete_url)
-    )) is None:
-        raise HTTPException(status_code=500, detail="Failed to create image resource")
-
-    image_id: int = row[0]
+    image_id = None
+    url = None
+    if picture is not None and picture.size != 0:
+        url, delete_url = await make_static_url(imgbb_api_key, picture)
+        if (row := await db.execute_insert(
+            "INSERT INTO Images(URL, DeleteURL) VALUES (?, ?)",
+            (url, delete_url)
+        )) is None:
+            raise HTTPException(status_code=500, detail="Failed to create image resource")
+        image_id: int = row[0]
 
     if (row := await db.execute_insert(
         "INSERT INTO Plants(Name, UserID, ImageID) VALUES (?, ?, ?)"
@@ -124,7 +145,7 @@ async def get_notes(
        , (plant_id, )) as notes:
         return [NoteView.from_row(note) for note in notes]
 
-@router.post("/{plant_id}/notes", status_code=status.HTTP_201_CREATED)
+@router.post("/{plant_id}/notes", status_code=status.HTTP_201_CREATED, response_model=NoteView)
 async def post_note(
     plant_id: int,
     note: str = Form(...),
@@ -150,6 +171,20 @@ async def post_note(
         rating=rating,
         timestamp=timestamp
     )
+
+@router.delete("/{plant_id}/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_note(
+    plant_id: int,
+    note_id: int,
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db)
+):
+    if not await owns_plant(user_id, plant_id, db):
+        raise HTTPException(status_code=404, detail="Plants does not belong to this user")
+
+    await db.execute("DELETE FROM Notes WHERE ID = ?", (note_id,))
+    await db.commit()
+
 
 async def make_static_url(api_key: str, file: UploadFile) -> tuple[str, str]:
     files = { "image" : await file.read() } # per api spec it MUST be "image"
