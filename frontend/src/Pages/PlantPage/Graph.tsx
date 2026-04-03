@@ -29,7 +29,7 @@ export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartPr
       <ResponsiveContainer width="100%" height={400}>
         <LineChart 
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 60 }} // Increased bottom margin
+          margin={{ top: 20, right: 30, left: 20, bottom: 60 }} 
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
           <XAxis 
@@ -37,7 +37,7 @@ export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartPr
             tick={{ fontSize: 12 }}
             angle={-45}
             textAnchor="end"
-            height={70} // Height for rotated labels
+            height={70} 
             stroke="#adadad"
             label={{
               value: xAxisLabel,

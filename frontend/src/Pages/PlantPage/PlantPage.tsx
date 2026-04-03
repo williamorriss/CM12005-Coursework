@@ -15,6 +15,8 @@ interface DataPoint {
   value: number;
 }
 
+// Will be replaced with sensor data
+// TODO: also need to wait for manual data endpoints
 const sampleData: DataPoint[] = [
   { datetime: new Date('2024-01-01 10:00'), value: 10 },
   { datetime: new Date('2024-01-01 11:00'), value: 15 },
