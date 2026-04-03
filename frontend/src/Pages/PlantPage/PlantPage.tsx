@@ -5,9 +5,22 @@ import { PlantPicture } from "./PlantPicture";
 import type { components } from "../../api/types";
 import { useEffect, useState } from "react";
 import { api } from "../../api/api";
+import { TimeSeriesChart } from "./Graph";
 
 type PlantID = number;
 type PlantData = components["schemas"]["PlantView"];
+
+interface DataPoint {
+  datetime: Date;
+  value: number;
+}
+
+const sampleData: DataPoint[] = [
+  { datetime: new Date('2024-01-01 10:00'), value: 10 },
+  { datetime: new Date('2024-01-01 11:00'), value: 15 },
+  { datetime: new Date('2024-01-01 12:00'), value: 7 },
+  { datetime: new Date('2024-01-01 13:00'), value: 12 },
+];
 
 // forgive me but i really want a working example
 // TODO: update this when theres a plant/ endpoint
@@ -39,6 +52,7 @@ export default function PlantPage() {
         <>
             <PlantPicture name={plantData ? plantData.name : "loading..."} src={imageSrc} />
             <Notes plantID={plantId} />
+            <TimeSeriesChart data={sampleData} title = "sample data" yAxisLabel="testY" xAxisLabel="Time"/>
         </>
     )
 }
