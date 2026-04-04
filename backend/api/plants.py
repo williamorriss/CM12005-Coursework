@@ -7,9 +7,9 @@ from fastapi.responses import JSONResponse
 from starlette.responses import Response
 
 import db
-from db import get_db
+from db import get_db, owns_plant
 from fastapi import APIRouter, Depends, status, UploadFile, File
-from auth import authorize
+from . import authorize
 from fastapi import HTTPException
 from pydantic import BaseModel
 from datetime import datetime
@@ -33,23 +33,6 @@ class PlantView(BaseModel):
             image_url=row["ImageURL"]
         )
 
-class NoteView(BaseModel):
-    id: int
-    plant_id: int
-    note: str
-    rating: int
-    timestamp: datetime
-
-    @staticmethod
-    def from_row(row: Row) -> "NoteView":
-        return NoteView(
-            id=row["ID"],
-            plant_id=row["PlantID"],
-            note=row["Note"],
-            rating=row["Rating"],
-            timestamp=row["Timestamp"]
-        )
-
 @router.get("", response_model=list[PlantView])
 async def get_plants(
     user_id: int = Depends(authorize),
@@ -63,7 +46,7 @@ async def get_plants(
         return [PlantView.from_row(row) for row in plants]
 
 @router.get("/{plant_id}", response_model=PlantView)
-async def get_plants(
+async def get_plant(
     plant_id: int,
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
@@ -89,8 +72,8 @@ async def add_plant(
     imgbb_api_key: str = Depends(get_imgbb_api_key),
     db: Connection = Depends(get_db)
 ) -> PlantView:
-    image_id = None
-    url = None
+    image_id: int | None = None
+    url: str | None = None
     if picture is not None and picture.size != 0:
         url, delete_url = await make_static_url(imgbb_api_key, picture)
         if (row := await db.execute_insert(
@@ -98,7 +81,7 @@ async def add_plant(
             (url, delete_url)
         )) is None:
             raise HTTPException(status_code=500, detail="Failed to create image resource")
-        image_id: int = row[0]
+        image_id = row[0]
 
     if (row := await db.execute_insert(
         "INSERT INTO Plants(Name, UserID, ImageID) VALUES (?, ?, ?)"
@@ -129,86 +112,6 @@ async def delete_plant(
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-# notes
-
-@router.get("/{plant_id}/notes", response_model=list[NoteView])
-async def get_notes(
-    plant_id: int,
-    user_id: int = Depends(authorize),
-    db: Connection = Depends(get_db)
-) -> list[NoteView]:
-    if not await owns_plant(user_id, plant_id, db):
-        raise HTTPException(status_code=404, detail="Plants does not belong to this user")
-
-    async with db.execute_fetchall(
-       "SELECT ID, PlantID, Note, Rating, Timestamp FROM Notes WHERE PlantID = ?"
-       , (plant_id, )) as notes:
-        return [NoteView.from_row(note) for note in notes]
-
-@router.post("/{plant_id}/notes", status_code=status.HTTP_201_CREATED, response_model=NoteView)
-async def post_note(
-    plant_id: int,
-    note: str = Form(...),
-    rating: int = Form(...),
-    user_id: int = Depends(authorize),
-    db: Connection = Depends(get_db)
-) -> NoteView:
-    if not await owns_plant(user_id, plant_id, db):
-        raise HTTPException(status_code=404, detail="Plants does not belong to this user")
-
-    async with db.execute(
-        "INSERT INTO Notes(PlantID, Note, Rating) VALUES (?, ?, ?) RETURNING ID, Timestamp"
-    , (plant_id, note, rating)) as cursor:
-        if (row := await cursor.fetchone()) is None:
-            raise HTTPException(status_code=400, detail="Failed to create note")
-        await db.commit()
-
-    note_id, timestamp = row
-    return NoteView(
-        id=note_id,
-        plant_id=plant_id,
-        note=note,
-        rating=rating,
-        timestamp=timestamp
-    )
-
-@router.delete("/{plant_id}/notes/{note_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_note(
-    plant_id: int,
-    note_id: int,
-    user_id: int = Depends(authorize),
-    db: Connection = Depends(get_db)
-):
-    if not await owns_plant(user_id, plant_id, db):
-        raise HTTPException(status_code=404, detail="Plants does not belong to this user")
-
-    await db.execute("DELETE FROM Notes WHERE ID = ?", (note_id,))
-    await db.commit()
-
-
-async def make_static_url(api_key: str, file: UploadFile) -> tuple[str, str]:
-    files = { "image" : await file.read() } # per api spec it MUST be "image"
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"https://api.imgbb.com/1/upload?key={api_key}",
-            files = files,
-            data={ "name" : file.filename }
-        )
-
-    if response.is_error:
-        raise HTTPException(status_code=500, detail="Could not make static url")
-
-
-    json_reponse = response.json()
-    if not json_reponse["success"]:
-        raise HTTPException(status_code=500, detail="Provider failed to make static url")
-
-    print(json_reponse)
-    data = json_reponse["data"]
-    delete_url = data["delete_url"]
-    url = data["url"]
-    return (url, delete_url)
-
 
 async def delete_image(plant_id: int, db: Connection) -> None:
     async with db.execute("SELECT ImageID FROM Plants WHERE ID = ?", (plant_id,)) as cursor:
@@ -233,11 +136,25 @@ async def delete_image(plant_id: int, db: Connection) -> None:
     await db.execute("DELETE FROM Images WHERE ID = ?", (image_id,))
     await db.commit()
 
-async def owns_plant(user_id: int, plant_id: int, db: Connection) -> bool:
-    async with db.execute(
-        "SELECT EXISTS(SELECT 1 FROM Plants WHERE UserID = ? AND ID = ?)",
-        (user_id, plant_id)
-    ) as cursor:
-        row = await cursor.fetchone()
-        assert row is not None
-        return bool(cast(int, row[0]))
+async def make_static_url(api_key: str, file: UploadFile) -> tuple[str, str]:
+    files = { "image" : await file.read() } # per api spec it MUST be "image"
+    async with httpx.AsyncClient() as client:
+        response = await client.post(
+            f"https://api.imgbb.com/1/upload?key={api_key}",
+            files = files,
+            data={ "name" : file.filename }
+        )
+
+    if response.is_error:
+        raise HTTPException(status_code=500, detail="Could not make static url")
+
+
+    json_reponse = response.json()
+    if not json_reponse["success"]:
+        raise HTTPException(status_code=500, detail="Provider failed to make static url")
+
+    print(json_reponse)
+    data = json_reponse["data"]
+    delete_url = data["delete_url"]
+    url = data["url"]
+    return (url, delete_url)

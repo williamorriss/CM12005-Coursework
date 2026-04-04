@@ -106,7 +106,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sensors": {
+    "/api/api.sensors": {
         parameters: {
             query?: never;
             header?: never;
@@ -124,7 +124,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sensors/{sensor_id}/session": {
+    "/api/api.sensors/{sensor_id}/session": {
         parameters: {
             query?: never;
             header?: never;
@@ -142,7 +142,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sensors/{sensor_id}": {
+    "/api/api.sensors/{sensor_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -159,7 +159,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/sensors/{sensor_id}/stream": {
+    "/api/api.sensors/{sensor_id}/stream": {
         parameters: {
             query?: never;
             header?: never;

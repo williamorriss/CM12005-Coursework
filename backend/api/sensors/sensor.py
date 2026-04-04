@@ -1,9 +1,6 @@
-from abc import ABC, abstractmethod
-
-from collections import namedtuple
+from abc import abstractmethod, ABC
 from asyncio import Queue
-
-__all__ = ["Sample", "Sensor", "router"]
+from collections import namedtuple
 
 Sample = namedtuple("Sample", ["temperature", "ph", "timestamp"])
 
@@ -32,6 +29,3 @@ class Sensor(ABC):
     @abstractmethod
     def remove_watcher(self, queue: Queue[Sample]) -> None:
         pass
-
-# reexports
-from .routes import router

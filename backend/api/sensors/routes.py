@@ -13,12 +13,12 @@ from . import Sensor, Sample
 from aiosqlite import Connection, Row
 from db import get_db
 from fastapi import Depends
-from auth import authorize
+from .. import authorize
 from fastapi import Request, APIRouter, HTTPException
 
-from sensors.testsensor import TestSensor
+from .testsensor import TestSensor
 
-router = APIRouter(prefix="/sensors")
+router = APIRouter(prefix="/api.sensors")
 
 def get_sensors(request: Request) -> dict[int, Sensor]:
     return cast(dict[int, Sensor], request.app.state.sensors)

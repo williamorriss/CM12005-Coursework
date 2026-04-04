@@ -2,8 +2,8 @@
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
 import os
 
-from aiosqlite import Connection, OperationalError
 from db import get_db
+from aiosqlite import Connection, OperationalError
 from fastapi.requests import Request
 from fastapi import APIRouter, Depends
 import jwt
@@ -217,8 +217,6 @@ async def get_username(
         raise HTTPException(status_code=500, detail="Server error whilst parsing CAS response")
 
     return user
-
-
 
 async def get_user_id(db: Connection, username: str) -> int | None:
     async with db.execute(
