@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { api } from "../../api/api";
 import { TimeSeriesChart } from "./Graph";
 import { PlantGuide } from "./PlantGuide";
+import { PlantInput } from "./PlantInput";
 
 type PlantID = number;
 type PlantData = components["schemas"]["PlantView"];
@@ -57,7 +58,7 @@ export default function PlantPage() {
             <Notes plantID={plantId} />
             <TimeSeriesChart data={sampleData} title = "sample data" yAxisLabel="testY" xAxisLabel="Time"/>
             <PlantGuide />
-
+            <PlantInput />
         </>
     )
 }
