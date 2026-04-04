@@ -1,4 +1,3 @@
-import os
 from typing import cast
 from fastapi import Request, Form
 
@@ -9,10 +8,9 @@ from starlette.responses import Response
 import db
 from db import get_db, owns_plant
 from fastapi import APIRouter, Depends, status, UploadFile, File
-from . import authorize
+from api.auth import authorize
 from fastapi import HTTPException
 from pydantic import BaseModel
-from datetime import datetime
 import httpx
 
 router = APIRouter(prefix="/plants")
@@ -149,12 +147,12 @@ async def make_static_url(api_key: str, file: UploadFile) -> tuple[str, str]:
         raise HTTPException(status_code=500, detail="Could not make static url")
 
 
-    json_reponse = response.json()
-    if not json_reponse["success"]:
+    json_response = response.json()
+    if not json_response["success"]:
         raise HTTPException(status_code=500, detail="Provider failed to make static url")
 
-    print(json_reponse)
-    data = json_reponse["data"]
+    print(json_response)
+    data = json_response["data"]
     delete_url = data["delete_url"]
     url = data["url"]
-    return (url, delete_url)
+    return url, delete_url

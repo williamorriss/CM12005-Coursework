@@ -1,51 +1,45 @@
 from aiosqlite import Connection, Row
 from db import get_db, owns_plant, owns_sensor
 from fastapi import APIRouter, Depends
-from . import authorize
+from api.auth import authorize
 from fastapi import HTTPException
 from fastapi.requests import Request
 from pydantic import BaseModel
 from datetime import datetime
+from enum import Enum
 
 router = APIRouter(prefix="/logging")
 
-LOG_FIELDS = {"temperature", "ph", "inserted_timestamp" }
 
-class Log(BaseModel):
+class LogView(BaseModel):
     temperature: float | None
     ph: float | None
     collected_timestamp: datetime | None
 
     @staticmethod
-    def from_row(row: Row) -> "Log":
-        return Log(
+    def from_row(row: Row) -> "LogView":
+        return LogView(
             temperature=row["Temperature"],
             ph=row["pH"],
             collected_timestamp=row["CollectedTimestamp"],
         )
 
-
-def get_log_fields(request: Request) -> list[str]:
-    out = []
-    for v in request.query_params.getlist("include"):
-        if v in LOG_FIELDS:
-            out.append(v)
-        else:
-            raise HTTPException(status_code=400, detail=f"Unknown log field {v}")
-
-    return out if out else list(LOG_FIELDS)
+class LogField(str, Enum):
+    temperature = "temperature"
+    ph = "ph"
+    inserted_timestamp = "inserted_timestamp"
 
 
-@router.get("/", response_model=list[Log])
+@router.get("/", response_model=list[LogView])
 async def get_logs(
     plant_id: int | None = None,
     sensor_id: int | None = None,
     date_from: datetime | None = None,
     date_to: datetime | None = None,
-    include: list[str] = Depends(get_log_fields),
+    include: list[LogField] | None = None,
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
-) -> list[Log]:
+) -> list[LogView]:
     if plant_id is not None:
         if not await owns_plant(user_id, plant_id, db):
             raise HTTPException(status_code=401, detail="Does not own plant.")
@@ -54,7 +48,7 @@ async def get_logs(
         if not await owns_sensor(user_id, sensor_id, db):
             raise HTTPException(status_code=401, detail="Does not own sensor.")
 
-    fields = ",".join(include)
+    fields = ",".join(include) if include else "*"
 
     async with db.execute_fetchall(f"""
         SELECT {fields} FROM Logs 
@@ -69,4 +63,4 @@ async def get_logs(
         "date_from": date_from,
         "date_to": date_to,
     } ) as logs:
-        return list(map(Log.from_row, logs))
+        return list(map(LogView.from_row, logs))

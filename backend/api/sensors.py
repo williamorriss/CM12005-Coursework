@@ -9,19 +9,16 @@ from fastapi.responses import Response
 from fastapi import status, Form
 from fastapi.responses import JSONResponse
 
-from . import Sensor, Sample
+from sensor import Sensor, Sample
 from aiosqlite import Connection, Row
 from db import get_db
 from fastapi import Depends
-from .. import authorize
+from api.auth import authorize
 from fastapi import Request, APIRouter, HTTPException
 
-from .testsensor import TestSensor
+from sensor import TestSensor
 
 router = APIRouter(prefix="/api.sensors")
-
-def get_sensors(request: Request) -> dict[int, Sensor]:
-    return cast(dict[int, Sensor], request.app.state.sensors)
 
 class SensorView(BaseModel):
     sensor_id: int
@@ -44,6 +41,8 @@ class SampleView(BaseModel):
     def from_sample(sample: Sample) -> "SampleView":
         return SampleView(temperature=sample.temperature, ph=sample.ph, timestamp=sample.timestamp)
 
+def get_sensors(request: Request) -> dict[int, Sensor]:
+    return cast(dict[int, Sensor], request.app.state.sensors)
 
 @router.get("", response_model=list[SensorView])
 async def get_user_sensors(

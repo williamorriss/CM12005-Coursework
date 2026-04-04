@@ -8,7 +8,7 @@ import type { components } from "../../api/types"
 
 type PlantView = components["schemas"]["PlantView"];
 
-function Home() : JSX.Element {
+export default function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
@@ -44,7 +44,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
 
     const fetchPlants = async () => {
         const { data, error } = await api.GET("/api/plants", {});
-        if (error) alert(error);
+        if (error) console.log(error);
         if (data) setPlants(data);
     };
 
@@ -113,5 +113,3 @@ function AddPlantForm({ addPlant } : { addPlant: ( plants: PlantView) => void}):
         </form>
     );
 }
-
-export default Home;

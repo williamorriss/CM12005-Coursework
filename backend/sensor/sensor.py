@@ -2,6 +2,7 @@ from abc import abstractmethod, ABC
 from asyncio import Queue
 from collections import namedtuple
 
+
 Sample = namedtuple("Sample", ["temperature", "ph", "timestamp"])
 
 class Sensor(ABC):

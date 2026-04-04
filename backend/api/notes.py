@@ -4,7 +4,7 @@ from starlette.responses import Response
 
 from db import get_db, owns_plant
 from fastapi import APIRouter, Depends, status
-from . import authorize
+from api.auth import authorize
 from fastapi import HTTPException
 from pydantic import BaseModel
 from datetime import datetime
