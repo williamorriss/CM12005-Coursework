@@ -100,12 +100,6 @@ temp/
 .rts2_cache_es/
 .rts2_cache_umd/
 
-# Optional REPL history
-.node_repl_history
-
-# Output of 'npm pack'
-*.tgz
-
 # Yarn v2
 .yarn/cache
 .yarn/unplugged
@@ -144,7 +138,6 @@ yarn.lock
 *.sw?
 
 # IntelliJ project files
-.idea
 *.iml
 out
 gen
@@ -159,9 +152,7 @@ __pycache__/
 
 # Distribution / packaging
 .Python
-build/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/
@@ -207,7 +198,6 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -249,14 +239,12 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
 .venv
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
-
 
 # Spyder project settings
 .spyderproject

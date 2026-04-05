@@ -1,5 +1,7 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
+import os
+
 from aiosqlite import Connection, OperationalError
 from db import get_db
 from fastapi.requests import Request
@@ -12,6 +14,7 @@ from fastapi import HTTPException
 import httpx
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
+from typing import cast
 
 router = APIRouter(prefix="/auth")
 
@@ -22,16 +25,16 @@ class UserSession(BaseModel):
 
 # extractors
 def get_allowed_origins(request: Request) -> list[str]:
-    return request.app.state.ALLOWED_ORIGINS
+    return cast(list[str], request.app.state.ALLOWED_ORIGINS)
 
 def get_cas_origin(request: Request) -> str:
-    return request.app.state.CAS_ORIGIN
+    return cast(str, request.app.state.CAS_ORIGIN)
 
 def get_origin(request: Request) -> str:
-    return request.app.state.ORIGIN
+    return cast(str, request.app.state.ORIGIN)
 
 def get_auth_key(request: Request) -> str:
-    return request.app.state.KEY
+    return cast(str, request.app.state.JWT_SIGNING_KEY)
 
 def authorize(request: Request) -> int:
     auth_token = request.cookies.get("auth-token")
@@ -49,7 +52,7 @@ def authorize(request: Request) -> int:
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid auth token")
 
-    return claims["user_id"]
+    return cast(int, claims["user_id"])
 
 # endpoints
 
@@ -92,7 +95,7 @@ async def cas_callback(
     origin: str = Depends(get_origin),
     cas_origin: str = Depends(get_cas_origin),
     db: Connection = Depends(get_db),
-    auth_key = Depends(get_auth_key)
+    auth_key: str = Depends(get_auth_key)
 ) -> RedirectResponse:
     try:
         redirect_url = base64.urlsafe_b64decode(redirect64).decode("utf-8")
@@ -134,8 +137,6 @@ async def cas_callback(
     except Exception as err:
         print(err)
         raise HTTPException(status_code=500, detail="Server error")
-
-
 
 @router.get("/session", response_model=UserSession)
 async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSession:

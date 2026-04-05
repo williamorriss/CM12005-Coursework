@@ -1,9 +1,13 @@
 import asyncio
 from collections.abc import AsyncIterable
 from datetime import datetime
+from typing import cast
 
 from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
+from fastapi.responses import Response
+from fastapi import status, Form
+from fastapi.responses import JSONResponse
 
 from . import Sensor, Sample
 from aiosqlite import Connection, Row
@@ -17,11 +21,11 @@ from sensors.testsensor import TestSensor
 router = APIRouter(prefix="/sensors")
 
 def get_sensors(request: Request) -> dict[int, Sensor]:
-    return request.app.state.sensors
+    return cast(dict[int, Sensor], request.app.state.sensors)
 
 class SensorView(BaseModel):
     sensor_id: int
-    plant_id: int
+    plant_id: int | None
     name: str
 
     @staticmethod
@@ -45,79 +49,104 @@ class SampleView(BaseModel):
 async def get_user_sensors(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-):
+) -> list[SensorView]:
     async with db.execute_fetchall("""
         SELECT ID, PlantID, Name FROM Sensors WHERE UserID = ? 
     """, (user_id,)) as rows:
         return [SensorView.from_row(row) for row in rows]
 
-
-@router.post("/{sensor_id}/session")
+@router.post("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def activate_sensor(
     sensor_id: int,
-    _user_id = Depends(authorize), # authorized endpoint
+    _user_id: int = Depends(authorize), # authorized endpoint
     sensors: dict[int, Sensor] = Depends(get_sensors),
     db: Connection = Depends(get_db),
-):
+) -> JSONResponse:
     if sensor_id in sensors:
         # already running
         sensors[sensor_id].start()
-        return
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"message" : "No change; sensor already running"}
+        )
 
     async with db.execute("""
         SELECT PlantID, Name FROM Sensors WHERE ID = ? 
     """, (sensor_id,)) as cursor:
         row = await cursor.fetchone()
-        if row is None:
-            raise HTTPException(status_code=404, detail="Sensor not found")
 
-        plant_id = row["PlantID"]
-        name = row["Name"]
+    if row is None:
+        raise HTTPException(status_code=404, detail="Sensor not found")
 
-        sensor= TestSensor(
-            plant_id=plant_id,
-            sensor_id=sensor_id,
-            name=name
-        )
+    sensor = TestSensor.from_row(row)
+    sensor.start()
+    sensors[sensor_id] = sensor
 
-        sensor.start()
-        sensors[sensor_id] = sensor
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content= {"message" : f"Sensor {sensor_id} activated"}
+    )
 
-
-@router.delete("/{sensor_id}/session")
+@router.delete("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def deactivate_sensor(
     sensor_id: int,
-    _user_id = Depends(authorize), # authorized endpoint
+    _user_id: int = Depends(authorize), # authorized endpoint
     sensors: dict[int, Sensor] = Depends(get_sensors),
-):
+) -> Response:
     if sensor_id not in sensors:
         raise HTTPException(status_code=404, detail="Sensor not found")
 
     sensor = sensors[sensor_id]
+    if not sensor.is_running():
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED,
+            content={"message": f"Sensor {sensor_id} not currently active"},
+        )
+
     sensor.stop()
 
-@router.post("")
-async def add_sensor (
-    name: str,
-    plant_id: int | None = None,
-    user_id: int = Depends(authorize), # authorized endpoint
-    db: Connection = Depends(get_db),
-):
-    async with db.execute_insert("""
-        INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)
-    """, (user_id, plant_id, name)):
-        await db.commit()
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={ "message" : f"Sensor {sensor_id} deactivated" }
+    )
 
-@router.delete("/{sensor_id}")
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def add_sensor(
+    name: str = Form(...),
+    plant_id: int | None = Form(...),
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db),
+) -> SensorView:
+    async with db.execute(
+        "INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)",
+        (user_id, plant_id, name)
+    ) as cursor:
+        await db.commit()
+        sensor_id = cursor.lastrowid
+
+    assert sensor_id is not None
+
+    return SensorView(
+        sensor_id = sensor_id,
+        name=name,
+        plant_id=plant_id,
+    )
+
+@router.delete("/{sensor_id}", status_code=status.HTTP_200_OK)
 async def del_sensor (
     sensor_id: int,
-    _user_id = Depends(authorize),
+    _user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
-):
+) -> Response:
     async with db.execute("""
          DELETE FROM Sensors WHERE ID = ? 
     """, (sensor_id,)) :
         await db.commit()
+
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message" : f"Sensor {sensor_id} deleted"}
+    )
 
 # @router.patch("/{sensor_id}")
 # async def update_sensor(
@@ -147,7 +176,7 @@ async def get_sensor_stream(
 ) -> AsyncIterable[SampleView]:
     out: asyncio.Queue[Sample] = asyncio.Queue()
     if sensor_id not in sensors:
-        raise HTTPException(status_code=404, detail="Sensor not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
 
     sensor = sensors[sensor_id]
     sensor.add_watcher(out)

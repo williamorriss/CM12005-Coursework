@@ -1,4 +1,3 @@
-import './box.css';
 
 export function PlantPicture({name, src}: {name: string, src: string}) {
     return (
