@@ -1,12 +1,15 @@
 import { useParams } from "react-router-dom";
-import { Notes } from "./Components/Notes";
-import { PlantPicture } from "./Components/PlantPicture";
-import type { components } from "../../api/types";
 import { useEffect, useState } from "react";
 import { api } from "../../api/api";
+import type { components } from "../../api/types";
+
+import { Notes } from "./Components/Notes";
+import { PlantPicture } from "./Components/PlantPicture";
 import { TimeSeriesChart } from "./Components/Graph";
 import { PlantGuide } from "./Components/PlantGuide";
 import { PlantInput } from "./Components/PlantInput";
+
+import "./Styling/PlantPage.css";
 
 type PlantID = number;
 type PlantData = components["schemas"]["PlantView"];
@@ -49,15 +52,41 @@ export default function PlantPage() {
         })()
     }, [plantId])
 
+    const graphList = Array.from({ length: 3 }, (_, index) => ({
+      id: index,
+      data: sampleData,
+      title: `Sample data ${index + 1}`,
+      xAxisLabel: "Time",
+      yAxisLabel: "Value"
+    }));
+
     // placeholder image
     const imageSrc = "https://i.imgflip.com/7ia2aa.jpg";
     return (
         <>
-            <PlantPicture name={plantData ? plantData.name : "loading..."} src={imageSrc} />
-            <Notes plantID={plantId} />
-            <TimeSeriesChart data={sampleData} title = "sample data" yAxisLabel="testY" xAxisLabel="Time"/>
-            <PlantGuide />
-            <PlantInput />
+            <div className="main-container">
+                <div className="left-container">
+                    <Notes plantID={plantId} />
+                    <PlantGuide />
+                </div>
+
+                <div className="middle-container">
+                    <PlantPicture name={plantData?.name || "Loading..."} src={imageSrc} />
+                    <PlantInput />
+                </div>
+
+                <div className="right-container">
+                    {graphList.map((graph) => (
+                        <TimeSeriesChart
+                            key={graph.id}
+                            data={graph.data}
+                            title={graph.title}
+                            xAxisLabel={graph.xAxisLabel}
+                            yAxisLabel={graph.yAxisLabel}
+                        />
+                    ))}
+                </div>
+            </div>
         </>
     )
 }

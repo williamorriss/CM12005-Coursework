@@ -76,14 +76,6 @@ export function Notes({plantID}: {plantID: number}) {
         }
     }
 
-    // Add note on enter
-    const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (event.key === "Enter" && !event.shiftKey) {
-            event.preventDefault();
-            addNote();
-        }
-    };
-
     // Displaying each note in the list as a div
     const noteList = currentNotes.map((note) => {
         return (
@@ -112,15 +104,14 @@ export function Notes({plantID}: {plantID: number}) {
                     placeholder="Add a note..."
                     value={newNote}
                     onChange={(e) => setNewNote(e.target.value)}
-                    onKeyDown={handleKeyPress}
-                    rows={1}
+                    rows={2}
                 />
                 <button 
                     className="note-button" 
                     onClick={addNote}
                     disabled={!newNote.trim()}
                 >
-                    Add Note
+                    Submit
                 </button>
             </div>
         </div>

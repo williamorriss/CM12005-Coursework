@@ -15,7 +15,7 @@ function MoodPicker() {
             <div className="item-div">
                 <h3 className="item-title">Mood:</h3>
                 <form className="item-form" onSubmit={handleSubmit}>
-                    <div>
+                    <div className="input-container">
                         <select
                             value={mood}
                             onChange={(event) => setMood(parseInt(event.target.value))}
@@ -48,7 +48,7 @@ function WaterSubmit() {
             <div className="item-div">
                 <h3 className="item-title">Water:</h3>
                 <form className="item-form" onSubmit={handleSubmit}>
-                    <div>
+                    <div className="input-container">
                         <button type="submit">
                             Watered Plant
                         </button>

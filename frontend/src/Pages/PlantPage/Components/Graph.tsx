@@ -23,11 +23,11 @@ export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartPr
 
   return (
     <div className="background-div">
-      <h2 className="title">{title}</h2>
+      <p className="title">{title}</p>
       <ResponsiveContainer width="100%" height={400}>
         <LineChart 
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 15 }} 
+          margin={{ top: 0, right: 30, left: 20, bottom: 15 }} 
         >
           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" />
           <XAxis 
@@ -37,6 +37,7 @@ export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartPr
             textAnchor="end"
             height={70} 
             stroke="#ffffff"
+            tickCount={10}
             label={{
               value: xAxisLabel,
               position: 'insideBottom',
@@ -53,13 +54,24 @@ export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartPr
             }}
           />
           <Tooltip 
-            labelFormatter={(label) => `Time: ${label}`}
-            formatter={(value) => [`${value}`, 'Value']}
+            labelFormatter={(label) => `${label}`}
+            formatter={(value) => [`${value}`, yAxisLabel]}
             contentStyle={{
               backgroundColor: 'white',
               border: '1px solid #ccc',
               borderRadius: '4px',
-              padding: '10px'
+              padding: '0px 12px',
+            }}
+            labelStyle={{ 
+              color: 'black',
+              fontWeight: 'bold',
+              marginBottom: '0px',
+              paddingBottom: '0px'
+             }}
+            itemStyle={{ 
+              color: 'black', 
+              marginTop: '0px',
+              paddingBottom: '0px'
             }}
           />
           <Line 
