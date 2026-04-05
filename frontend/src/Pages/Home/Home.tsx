@@ -1,6 +1,6 @@
 import { useAuth, type User } from "../../AuthContext";
 import { type JSX, useEffect } from "react";
-import { Notes } from "../PlantPage/Notes";
+import { Notes } from "../PlantPage/Components/Notes";
 import { useNavigate } from 'react-router-dom'
 
 function Home() : JSX.Element {

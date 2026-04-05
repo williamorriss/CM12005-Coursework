@@ -1,4 +1,4 @@
-import "./PlantPage.css"
+import "../Styling/PlantInput.css";
 import { useState } from "react";
 
 function MoodPicker() {
@@ -12,9 +12,9 @@ function MoodPicker() {
 
     return (
         <>
-            <div>
-                <h3>Mood:</h3>
-                <form onSubmit={handleSubmit}>
+            <div className="item-div">
+                <h3 className="item-title">Mood:</h3>
+                <form className="item-form" onSubmit={handleSubmit}>
                     <div>
                         <select
                             value={mood}
@@ -45,9 +45,9 @@ function WaterSubmit() {
 
     return (
         <>
-            <div>
-                <h3>Water:</h3>
-                <form onSubmit={handleSubmit}>
+            <div className="item-div">
+                <h3 className="item-title">Water:</h3>
+                <form className="item-form" onSubmit={handleSubmit}>
                     <div>
                         <button type="submit">
                             Watered Plant
@@ -63,7 +63,7 @@ export function PlantInput() {
 
 
     return (
-        <div className="counter-box">
+        <div className="background-div">
             <MoodPicker />
             <WaterSubmit />
         </div>

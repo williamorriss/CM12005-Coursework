@@ -1,0 +1,16 @@
+.background-div {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 1px;
+    background-color: rgb(29, 100, 48);
+    width: 100%;
+    border-radius: 12px;
+}
+
+.title {
+    color: white;
+    font-weight: bold;
+    font-size: 24px;
+    margin: 0;
+}

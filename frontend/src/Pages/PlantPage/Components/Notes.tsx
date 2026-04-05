@@ -1,7 +1,7 @@
-import "./PlantPage.css";
+import "../Styling/Notes.css";
 import {useEffect, useState} from "react";
-import { api } from "../../api/api";
-import type { components } from "../../api/types";
+import { api } from "../../../api/api";
+import type { components } from "../../../api/types";
 
 type NoteView = components["schemas"]["NoteView"];
 
@@ -87,7 +87,7 @@ export function Notes({plantID}: {plantID: number}) {
     // Displaying each note in the list as a div
     const noteList = currentNotes.map((note) => {
         return (
-            <div key={note.id} style={{marginBottom: "12px", textAlign: "left"}}>
+            <div key={note.id} className="note-panel">
                 <strong className="text">{formatDateTime(note.timestamp)}</strong>
                 <p className="text">{note.note}</p>
             </div>

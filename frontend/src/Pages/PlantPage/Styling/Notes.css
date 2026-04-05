@@ -1,0 +1,72 @@
+.notes-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-height: 300px;
+}
+
+.note-box {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: rgb(29, 100, 48);
+    border-radius: 12px 12px 0 0;
+}
+
+.note-input-container {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    padding: 15px;
+    margin: 0;
+    background: rgb(29, 100, 48);
+    border-top: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 0 0 12px 12px;
+}
+
+.note-input {
+    display: flex;
+    width: 90%;
+    padding: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.9);
+    color: rgba(0, 0, 0, 0.9);
+    resize: vertical;
+    box-sizing: border-box; 
+}
+
+.note-button {
+    padding: 10px 20px;
+    width: 10%;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    background: var(--accent, #22c55e);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.note-button:hover:not(:disabled) {
+    background: var(--accent-hover, #16a34a);
+    transform: translateY(-1px);
+}
+
+.note-button:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.note-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.note-panel {
+    margin-bottom: 12px; 
+    text-align: left;
+    color: white;
+}

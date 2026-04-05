@@ -1,8 +1,7 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { format } from 'date-fns';
-import "./PlantPage.css";
+import "../Styling/Graph.css";
 
-// Define your data type
 interface DataPoint {
   datetime: Date;
   value: number;
@@ -16,7 +15,6 @@ interface ChartProps {
 }
 
 export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartProps) {
-  // Transform data for recharts
   const chartData = data.map(point => ({
     datetime: format(point.datetime, 'yyyy-MM-dd HH:mm'),
     value: point.value,
@@ -24,35 +22,34 @@ export function TimeSeriesChart({ data, title, yAxisLabel, xAxisLabel }: ChartPr
   }));
 
   return (
-    <div className="counter-box">
-      <h2>{title}</h2>
+    <div className="background-div">
+      <h2 className="title">{title}</h2>
       <ResponsiveContainer width="100%" height={400}>
         <LineChart 
           data={chartData}
-          margin={{ top: 20, right: 30, left: 20, bottom: 60 }} 
+          margin={{ top: 20, right: 30, left: 20, bottom: 15 }} 
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#ffffff" />
           <XAxis 
             dataKey="datetime" 
             tick={{ fontSize: 12 }}
             angle={-45}
             textAnchor="end"
             height={70} 
-            stroke="#adadad"
+            stroke="#ffffff"
             label={{
               value: xAxisLabel,
               position: 'insideBottom',
-              offset: -5,
-              style: { fill: '#adadad', fontSize: 20 }
+              style: { fill: '#ffffff', fontSize: 20 }
             }}
           />
           <YAxis 
-            stroke="#adadad"
+            stroke="#ffffff"
             label={{ 
               value: yAxisLabel, 
               angle: -90, 
               position: 'insideLeft',
-              style: { fill: '#adadad', fontSize: 20 }
+              style: { fill: '#ffffff', fontSize: 20 }
             }}
           />
           <Tooltip 

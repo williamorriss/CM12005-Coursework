@@ -1,13 +1,12 @@
 import { useParams } from "react-router-dom";
-import { Notes } from "./Notes";
-import "./PlantPage.css";
-import { PlantPicture } from "./PlantPicture";
+import { Notes } from "./Components/Notes";
+import { PlantPicture } from "./Components/PlantPicture";
 import type { components } from "../../api/types";
 import { useEffect, useState } from "react";
 import { api } from "../../api/api";
-import { TimeSeriesChart } from "./Graph";
-import { PlantGuide } from "./PlantGuide";
-import { PlantInput } from "./PlantInput";
+import { TimeSeriesChart } from "./Components/Graph";
+import { PlantGuide } from "./Components/PlantGuide";
+import { PlantInput } from "./Components/PlantInput";
 
 type PlantID = number;
 type PlantData = components["schemas"]["PlantView"];
