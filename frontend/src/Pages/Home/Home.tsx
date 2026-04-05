@@ -72,6 +72,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <Plants plants={plants} />
             <button onClick={() => navigate("/dev/sensors")}> dev </button>
             <button onClick={() => navigate("/dev/plants")}> add-plants? </button>
+            <button onClick={() => navigate("/Home/PlantPage")}> view-plants </button> 
             {/* <button onClick={() => navigate("dev")}> plantPage? </button> */}
         </>
     )
