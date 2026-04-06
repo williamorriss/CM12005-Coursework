@@ -1,0 +1,34 @@
+.main-container {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  gap: 5px;
+  height: 100vh;
+}
+
+.left-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: 100%;
+  flex: 2;
+}
+
+.middle-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  height: 100%;
+  flex: 3;
+}
+
+.right-container {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  overflow-y : auto;
+  overflow-x: hidden;
+  max-height: 100vh;
+  height: 100%;
+  flex: 3;
+}
