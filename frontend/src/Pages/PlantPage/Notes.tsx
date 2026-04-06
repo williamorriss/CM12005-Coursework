@@ -1,70 +1,120 @@
 import "./PlantPage.css";
-import {useState} from "react";
+import {useEffect, useState} from "react";
+import { api } from "../../api/api";
+import type { components } from "../../api/types";
+import * as React from "react";
 
-export type NoteEntry = [string, string];
-export type NoteEntries = NoteEntry[];
+type NoteView = components["schemas"]["NoteView"];
 
-export function Notes({notes}: {notes: NoteEntries}) {
+type NewNote = {
+    note: string;
+    rating: number;
+}
+
+const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
+export function Notes({plantID}: {plantID: number}) {
     // States
-    const [newNote, setNewNote] = useState("");
-    const [currentNotes, setCurrentNotes] = useState<NoteEntries>(notes);
+    const [newText, setNewText] = useState("");
+    const [currentNotes, setCurrentNotes] = useState<NoteView[]>([]);
 
-    // Get dates
-    const getCurrentDate = () => {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        return `${day}/${month}/${year}`;
+    const fetchNotes = async () => {
+        const { data, error } = await api.GET("/api/plants/{plant_id}/notes", {
+            params: { path: { plant_id: plantID } },
+        });
+        if (error) alert(error);
+        if (data) setCurrentNotes(data);
     }
-    const getCurrentTime = () => {
-        const now = new Date();
-        const hours = String(now.getHours()).padStart(2, '0');
-        const minutes = String(now.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes}`;
-    }
+    useEffect(() => {
+        if(plantID){
+            fetchNotes().then();
+        }
+    }, [plantID]);
 
-    //Placeholder till we get endpoint
-    const addNoteBackend = async (date: string, content: string) => {
-        console.log("Adding note to backend ", {date, content});
-        return true;
+    const addNoteBackend = async (plantID: number, note: NewNote) : Promise<NoteView | null> => {
+        const sendForm = new FormData();
+        sendForm.append("note", note.note)
+        sendForm.append("rating", "5")
+        const { data, error } = await api.POST("/api/plants/{plant_id}/notes", {
+            params: {
+                path: {plant_id: plantID},
+            },
+            body: sendForm as any,
+        });
+
+        if (error) {
+            alert(error);
+            return null;
+        }
+
+        return data as NoteView;
     }
 
     const addNote = async () => {
         // Checks to see if new note is empty
-        if(!newNote.trim()){
+        if(!newText.trim()){
             return;
         }
 
-        const date = getCurrentDate();
-        const time = getCurrentTime();
-        const dateTime = `${date} ${time}`;
+        const newNote: NewNote = {
+            note: newText,
+            rating: 5,
+        }
 
-        const newNotes: NoteEntries = [...currentNotes, [dateTime, newNote]];
-        setCurrentNotes(newNotes);
-        setNewNote("");
+        const newNoteView = await addNoteBackend(plantID, newNote);
+        if (newNoteView != null) {
+            setCurrentNotes([...currentNotes, newNoteView]);
+            setNewText("");
+
+        }
 
         try {
-            await addNoteBackend(date, newNote);
+
         } catch (error) {
             console.error("Error adding note to backend", error);
         }
     }
 
     // Add note on enter
-    const handleKeyPress = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const handleKeyPress = async (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-            addNote();
+            await addNote();
         }
     };
 
+    const deleteNote = async (id: number) => {
+        const { error} = await api.DELETE("/api/plants/{plant_id}/notes/{note_id}", {
+            params : {
+                path : {
+                    plant_id : plantID,
+                    note_id: id,
+                }
+            }
+        });
+        if (error) {
+            alert(error);
+            return null;
+        }
+
+        setCurrentNotes(currentNotes.filter(note => note.id !== id));
+    }
+
     // Displaying each note in the list as a div
-    const noteList = currentNotes.map((note, index) => {
+    const noteList = currentNotes.map((note) => {
         return (
-            <div key={index} style={{marginBottom: "12px", textAlign: "left"}}>
-                <strong className="text">{note[0]}</strong>
-                <p className="text">{note[1]}</p>
+            <div key={note.id} style={{marginBottom: "12px", textAlign: "left"}}>
+                <strong className="text">{formatDateTime(note.timestamp)}</strong>
+                <p className="text">{note.note}</p>
+                <button onClick={() => deleteNote(note.id)}> Delete </button>
             </div>
         )
     })
@@ -85,15 +135,15 @@ export function Notes({notes}: {notes: NoteEntries}) {
                 <textarea
                     className="note-input"
                     placeholder="Add a note..."
-                    value={newNote}
-                    onChange={(e) => setNewNote(e.target.value)}
+                    value={newText}
+                    onChange={(e) => setNewText(e.target.value)}
                     onKeyDown={handleKeyPress}
                     rows={1}
                 />
                 <button 
                     className="note-button" 
                     onClick={addNote}
-                    disabled={!newNote.trim()}
+                    disabled={!newText.trim()}
                 >
                     Add Note
                 </button>
