@@ -1,5 +1,4 @@
 import {useParams} from "react-router-dom";
-import "./PlantPage.css";
 import type { components } from "../../api/types";
 import { useEffect, useState } from "react";
 import { api } from "../../api/api";
