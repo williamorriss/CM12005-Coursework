@@ -7,14 +7,17 @@ import image from "../skeleton left.png"
 function UserDetails() : JSX.Element {
     return (
             <div>
-                <img src={ image }></img>
+                <img id="accountImage" src={ image }></img>
                 <button onClick = {changeImage}>Change profile image</button>
+                
             </div>
     )
 
 
 }
 
-function changeImage()
+function changeImage() {
+    //this does nothing for now until backend does some stuff
+}
 
 export default UserDetails;
