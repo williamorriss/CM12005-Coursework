@@ -41,10 +41,6 @@ function InputPlantID ( {setPlantID } : { setPlantID: (id: number) => void } ) :
     )
 }
 
-import { useState } from "react";
-
-
-
 interface Option {
     id: string;
     label: string;

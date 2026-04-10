@@ -361,10 +361,15 @@ export interface components {
         };
         /** UserSession */
         UserSession: {
-            /** User Id */
-            user_id: number;
             /** Username */
             username: string;
+            /**
+             * Date Joined
+             * Format: date-time
+             */
+            date_joined: string;
+            /** Profile Picture */
+            profile_picture: string | null;
         };
         /** ValidationError */
         ValidationError: {
