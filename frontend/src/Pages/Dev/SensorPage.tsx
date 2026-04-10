@@ -4,9 +4,7 @@ import type { components } from "../../api/types"
 
 type SensorView = components["schemas"]["SensorView"];
 
-
-
-function SensorPage(): JSX.Element {
+export default function SensorPage(): JSX.Element {
     const [sensorID, setSensorID] = useState<number>(0);
     const [plantID, setPlantID] = useState<number>(0);
     const [lastFetch, setLastFetch] = useState<number | null>();
@@ -101,5 +99,3 @@ function SensorViewComponent({sensor}: { sensor :SensorView}) : JSX.Element {
         </>
     )
 }
-
-export default SensorPage;

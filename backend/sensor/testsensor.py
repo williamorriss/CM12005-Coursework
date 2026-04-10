@@ -3,7 +3,7 @@ from aiosqlite import Row
 import numpy as np
 import asyncio
 import aiosqlite
-from . import Sensor, Sample
+from sensor.sensor import Sensor, Sample
 from db import DBNAME
 from random import randrange
 

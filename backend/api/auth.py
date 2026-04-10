@@ -1,9 +1,7 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
-import os
-
-from aiosqlite import Connection, OperationalError
 from db import get_db
+from aiosqlite import Connection, OperationalError
 from fastapi.requests import Request
 from fastapi import APIRouter, Depends
 import jwt
@@ -19,9 +17,9 @@ from typing import cast
 router = APIRouter(prefix="/auth")
 
 class UserSession(BaseModel):
-    user_id: int
     username: str
-
+    date_joined: datetime
+    profile_picture: str | None
 
 # extractors
 def get_allowed_origins(request: Request) -> list[str]:
@@ -140,14 +138,16 @@ async def cas_callback(
 
 @router.get("/session", response_model=UserSession)
 async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSession:
-    async with db.execute("SELECT username FROM users WHERE id = ?", (user_id,)) as cursor:
+    async with db.execute(
+         "SELECT Username, DateJoined, URL FROM Users LEFT JOIN Images ON ImageID = Images.ID WHERE Users.ID = ?", (user_id,)
+    ) as cursor:
         row = await cursor.fetchone()
 
     if row is None:
         raise HTTPException(status_code=404, detail="User not found")
 
-    username = row[0]
-    return UserSession(user_id=user_id, username=username)
+    username, date_joined, profile_picture = row
+    return UserSession(username=username, date_joined=date_joined, profile_picture=profile_picture)
 
 @router.get("/refresh", response_class=Response)
 async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = Depends(authorize)) -> Response:
@@ -217,8 +217,6 @@ async def get_username(
         raise HTTPException(status_code=500, detail="Server error whilst parsing CAS response")
 
     return user
-
-
 
 async def get_user_id(db: Connection, username: str) -> int | None:
     async with db.execute(

@@ -1,13 +1,11 @@
-import os
 from typing import Any, AsyncGenerator
+
+from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
 from db import init_db
 
-from fastapi import FastAPI
-from auth import router as auth_router
-from sensors import router as sensors_router
-from plants import router as plant_router
+from api import router
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 load_dotenv()
@@ -21,7 +19,8 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
     await init_db()
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
+app.include_router(router)
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
@@ -46,9 +45,6 @@ app.state.ALLOWED_ORIGINS = [app.state.ORIGIN, DEV_SERVER]
 app.state.JWT_SIGNING_KEY = signing_key
 app.state.IMGBB_API_KEY = imgbb_key
 app.state.sensors = {}
-app.include_router(auth_router, prefix="/api")
-app.include_router(sensors_router, prefix="/api")
-app.include_router(plant_router, prefix="/api")
 
 @app.get("/")
 async def index() -> FileResponse:
