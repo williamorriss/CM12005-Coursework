@@ -4,7 +4,7 @@ import Home from "./Pages/Home/Home"
 import SensorPage from "./Pages/Dev/SensorPage";
 import DevPage from "./Pages/Dev/DevPage.tsx";
 import PlantPage from "./Pages/PlantPage/PlantPage.tsx";
-import UserDetails from "./Pages/UserDetails/UserDetails.tsx";
+import UserPage from "./Pages/UserPage/UserPage.tsx";
 
 function App() {
     return (
@@ -14,7 +14,7 @@ function App() {
                 <Route path="/plants/:id" element={<PlantPage />} />
                 <Route path="/dev" element={<DevPage />} />
                 <Route path="/dev/sensors" element={<SensorPage />} />
-                <Route path="/" element= {<UserDetails />} />
+                <Route path="/userPage" element= {<UserPage />} />
             </Routes>
         </>
     )

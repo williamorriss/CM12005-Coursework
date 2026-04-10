@@ -5,25 +5,51 @@ import { api } from "../../api/api";
 import { useAuth, type User } from "../../AuthContext";
 import {type NavigateFunction, useNavigate} from 'react-router-dom'
 
+import session from "../Home/Home.tsx"
+import deleteUser from "../Home/Home.tsx"
+import "./UserPage.css"
 
 
-type UserID = number;
-type UserData = components["schemas"]["UserSession"]
-
-api.GET("/api/auth/session")
+import image from "./skeleton left.png"
 
 
-export default function UserPage ({ session, deleteUser }: {session: User, deleteUser: () => void}) {
+
+
+
+
+
+function UserPage () {
     return (
         <div id="Profile">
-            <h1>Welcome {session?.username}</h1>
+            <h1>Welcome</h1>
             <h4>Your current stats are: </h4>
-            <p>Stat1: <br/>
-                Stat2: <br/>
-                Stat3: <br/>
+            <p>Total Achievements: <br/>
+                Total points: <br/>
+                Total Number of Plants: <br/>
+                Total Notes: <br/>
             </p>
 
-            <button onClick={deleteUser}>delete</button>
+            <textarea name="username" placeholder="PlaceHolder" />
+            <br/>
+
+
+            <button onClick={deleteUser}>delete Account :(</button>
         </div>
     )
+}
+
+export default function UserDetails() : JSX.Element {
+    return (
+            <div>
+                <img id="accountImage" src={ image }></img>
+                <button onClick = {changeImage}>Change profile image</button>
+                <UserPage />
+            </div>
+    )
+
+
+}
+
+function changeImage() {
+    //this does nothing for now until backend does some stuff
 }
