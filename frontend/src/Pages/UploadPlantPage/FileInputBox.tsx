@@ -3,7 +3,10 @@ import "./AddPlantWidget.css"
 
 const handleDragOver: ReactEventHandler<HTMLDivElement> = (e) => e.preventDefault();
 
-export default function FileInputBox({ onFileSelected }: { onFileSelected: (file: File) => void }) {
+const fileHoverBGColor = "rgb(133 141 148)";
+const noFileHoverBGColor = "rgb(148 148 148)";
+
+export default function FileInputBox({ file, onFileSelected }: { file: File | null, onFileSelected: (file: File) => void }) {
     const [isDragging, setIsDragging] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -24,25 +27,42 @@ export default function FileInputBox({ onFileSelected }: { onFileSelected: (file
         }
     }
 
-    const onClick = () => {
+    const onClick = (e: Event) => {
         fileInputRef.current!.click()
+        e.stopPropagation();
     }
+
+    if (file) {
+        console.log(URL.createObjectURL(file));
+    }
+    const sectionContents = file ? 
+    (
+        <>
+            <img className="file-image-preview" src={URL.createObjectURL(file)} />
+        </>
+    ) : (
+        <>
+             Upload files here! <br/>
+             Click here to upload a file!
+        </>
+    )
 
     return (
         <>
             <input hidden ref={fileInputRef} type="file" onChange={onSubmitFile}/>
             <div
-            className="file-drag-box"
-            onDrop={handleDrop}
-            onDragOver={handleDragOver}
-            onDragEnter={handleDragEnter}
-            onDragLeave={handleDragLeave}
-            onClick={onClick}
-            style={{
-                backgroundColor: isDragging ? "#f0f8ff" : "#fff",
-            }}
+                className="file-drag-box"
+                onDrop={handleDrop}
+                onDragOver={handleDragOver}
+                onDragEnter={handleDragEnter}
+                onDragLeave={handleDragLeave}
+                onClick={onClick}
+                style={{
+                    backgroundColor: isDragging ? fileHoverBGColor : noFileHoverBGColor,
+                }}
             >
-                Hey hi there.
+                {sectionContents}
+
             </div>
         </>
     )

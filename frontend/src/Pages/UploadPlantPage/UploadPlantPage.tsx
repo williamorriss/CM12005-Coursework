@@ -1,9 +1,11 @@
+import Popup from "../../Popup.tsx";
 import { api } from "../../api/api";
 import "../PlantPage/PlantPage.css";
 import FileInputBox from "./FileInputBox";
 import { useState, type ChangeEventHandler } from "react";
 
 export default function UploadPlantPage(_: {}) {
+    const [popUpOpen, setPopUpOpen] = useState(false);
     const [file, setFile] = useState<File | null>(null);
     const [name, setName] = useState("")
 
@@ -20,14 +22,23 @@ export default function UploadPlantPage(_: {}) {
     const onTextboxChange: ChangeEventHandler<HTMLInputElement> = (e) => {setName(e.target.value)};
 
     return (
-        <div className="upload-plant-widget">
-            <h4>Add Plant</h4>
-            <label className="upload-plant-widget-section">
-                { "Name: " }
-                <input type="text" value={name} onChange={onTextboxChange} placeholder="Plant Name"/>
-            </label>
-            <FileInputBox onFileSelected={setFile} />
-            <button type="submit" onClick={uploadPlant} disabled={file == null}>Add Plant</button>
-        </div>
+        <>
+            <button onClick={() => setPopUpOpen(true)}>Open popup test</button>
+            <Popup isOpen={popUpOpen} onRequestClose={() => setPopUpOpen(false)}>
+                <h2>Add Plant</h2>
+                <label className="upload-plant-widget-section flex-right">
+                    Name:  
+                    <input type="text" value={name} onChange={onTextboxChange} placeholder="Plant Name"/>
+                </label>
+
+                <label className="upload-plant-widget-section flex-down">
+                    Image File: {file ? file.name : "None"}
+                    <FileInputBox onFileSelected={setFile} file={file}/>
+                </label>
+                <button type="submit" onClick={uploadPlant} disabled={file == null}>Add Plant</button>
+                {/* <div className="upload-plant-widget"> */}
+                {/* </div> */}
+            </Popup>
+        </>
     )
 }
