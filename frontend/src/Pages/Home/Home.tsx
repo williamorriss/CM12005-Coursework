@@ -4,7 +4,7 @@ import "./Home.css";
 import Plants from "./PlantBar"
 import {type NavigateFunction, useNavigate} from 'react-router-dom'
 import { api, type Achievement, type Plant } from "../../api";
-import { useAchievementEffect } from "../../Achievements";
+import { useAchievementEffect, deleteAchievements } from "../../Achievements";
 
 // const testSubscribe = async () => {
 //     const {error} = await api.POST("/api/achievements/test", {} as any);
@@ -64,6 +64,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             {fetchPlants}
 
             <button onClick={logout}>logout</button>
+            <button onClick={deleteAchievements}> Reset Achievements </button>
             <p>{`Hello ${session?.username}`}</p>
             {/* id = {session?.user_id} */}
 

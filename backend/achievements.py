@@ -1,5 +1,6 @@
 from asyncio import Queue
 from uuid import uuid4, UUID
+from db import get_db_contextmanager
 
 from aiosqlite import Connection
 
@@ -49,31 +50,32 @@ class AchievementSystem:
         for queue_id in self.connections.get(user_id, []):
             await self.queues[queue_id].put(event)
 
-    async def plant_achievements(self, db: Connection, user_id: int) -> None:
-        async with db.execute("SELECT COUNT(*) as No FROM Plants WHERE UserID = ?", (user_id, )) as cursor:
-            row = await cursor.fetchone()
-            assert row is not None
-            no_plants = row["No"]
+    async def plant_achievements(self, user_id: int) -> None:
+        async with get_db_contextmanager() as db:
+            async with db.execute("SELECT COUNT(*) as No FROM Plants WHERE UserID = ?", (user_id, )) as cursor:
+                row = await cursor.fetchone()
+                assert row is not None
+                no_plants = row["No"]
 
-        rows = await db.execute_fetchall("""
-            SELECT a.Code as Code FROM Awards a
-            INNER JOIN Achievements ac ON a.ID = ac.AwardID
-            WHERE ac.UserID = ?""",
-            (user_id, )
-        )
+            rows = await db.execute_fetchall("""
+                SELECT a.Code as Code FROM Awards a
+                INNER JOIN Achievements ac ON a.ID = ac.AwardID
+                WHERE ac.UserID = ?""",
+                (user_id, )
+            )
 
-        assert rows is not None
-        codes = {row["Code"] for row in rows}
+            assert rows is not None
+            codes = {row["Code"] for row in rows}
 
-        if "P1" not in codes and no_plants > 0:
-            res = await db.execute_insert("""
-                INSERT INTO Achievements (AwardID, UserID)
-                SELECT ID, ? FROM Awards WHERE Code = ?
-            """, (user_id, 'P1'))
-            print(res)
-            await self.send(user_id, AchievementEvent(code="P1"))
+            if "P1" not in codes and no_plants > 0:
+                res = await db.execute_insert("""
+                    INSERT INTO Achievements (AwardID, UserID)
+                    SELECT ID, ? FROM Awards WHERE Code = ?
+                """, (user_id, 'P1'))
+                print(res)
+                await self.send(user_id, AchievementEvent(code="P1"))
 
-        if "P10" not in codes and no_plants >= 10:
-            await self.send(user_id, AchievementEvent(code="P10"))
+            if "P10" not in codes and no_plants >= 10:
+                await self.send(user_id, AchievementEvent(code="P10"))
 
-        await db.commit()
+            await db.commit()

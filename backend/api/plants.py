@@ -1,5 +1,5 @@
 from typing import cast
-from fastapi import Request, Form
+from fastapi import Request, Form, BackgroundTasks
 
 from aiosqlite import Connection, Row
 from starlette.responses import Response
@@ -63,12 +63,13 @@ async def get_plant(
 
 @router.post("", status_code=status.HTTP_201_CREATED, response_model=PlantSchema)
 async def add_plant(
+    background_tasks: BackgroundTasks,
     name: str = Form(...),
     picture: UploadFile | None = File(...),
     user_id: int = Depends(authorize),
     imgbb_api_key: str = Depends(get_imgbb_api_key),
     db: Connection = Depends(get_db),
-    achievement_system: AchievementSystem = Depends(AchievementSystem)
+    achievement_system: AchievementSystem = Depends(AchievementSystem),
 ) -> PlantSchema:
     image_id: int | None = None
     url: str | None = None
@@ -90,7 +91,7 @@ async def add_plant(
     plant_id = row[0]
 
     await db.commit()
-    await achievement_system.plant_achievements(db, user_id)
+    background_tasks.add_task(achievement_system.plant_achievements, user_id) # use background task just in case achievements become slower
     return PlantSchema(
         id=plant_id,
         name=name,

@@ -1,8 +1,16 @@
 import csv
 from typing import AsyncGenerator, cast
 from aiosqlite import connect, Connection, Row
+from contextlib import asynccontextmanager
 
 DBNAME = "test.db"
+
+
+@asynccontextmanager # Add this decorator
+async def get_db_contextmanager() -> AsyncGenerator[Connection, None]:
+    async with connect(DBNAME) as db:
+        db.row_factory = Row
+        yield db
 
 async def get_db() -> AsyncGenerator[Connection, None]:
     async with connect(DBNAME) as db:

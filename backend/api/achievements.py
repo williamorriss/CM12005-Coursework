@@ -1,5 +1,8 @@
 from typing import cast, AsyncIterable
+
+from aiosqlite import Connection
 from fastapi import Request
+from db import get_db
 
 from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
@@ -52,3 +55,11 @@ async def test (
     await achievements.send(user_id, AchievementEvent("test"))
     print("test achievement")
     return JSONResponse(content="posted", status_code=status.HTTP_200_OK)
+
+@router.delete("")
+async def delete_achievements(
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db)
+) -> JSONResponse:
+    await db.execute("DELETE FROM achievements WHERE UserID = ?", (user_id,))
+    return JSONResponse(content="deleted", status_code=status.HTTP_200_OK)

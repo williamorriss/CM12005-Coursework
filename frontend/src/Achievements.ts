@@ -1,5 +1,5 @@
 import {useEffect, useRef} from "react";
-import { APICONFIG, type Achievement } from "./api";
+import {APICONFIG, type Achievement, api} from "./api";
 
 export function useAchievementEffect(onAchievement: (achievement: Achievement) => void) : void {
     const handlerRef = useRef(onAchievement);
@@ -22,4 +22,8 @@ export function useAchievementEffect(onAchievement: (achievement: Achievement) =
             source.close();
         };
     }, []);
+}
+
+export function deleteAchievements() : void {
+    api.DELETE("/api/achievements", {} as any);
 }
