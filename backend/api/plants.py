@@ -2,10 +2,9 @@ from typing import cast
 from fastapi import Request, Form
 
 from aiosqlite import Connection, Row
-from fastapi.responses import JSONResponse
 from starlette.responses import Response
 
-import db
+from achievements import AchievementSystem
 from db import get_db, owns_plant
 from fastapi import APIRouter, Depends, status, UploadFile, File
 from api.auth import authorize
@@ -18,37 +17,37 @@ router = APIRouter(prefix="/plants")
 def get_imgbb_api_key(request: Request) -> str:
     return cast(str, request.app.state.IMGBB_API_KEY)
 
-class PlantView(BaseModel):
+class PlantSchema(BaseModel):
     id: int
     name: str
     image_url: str | None
 
     @staticmethod
-    def from_row(row: Row) -> "PlantView":
-        return PlantView(
+    def from_row(row: Row) -> "PlantSchema":
+        return PlantSchema(
             id=row["ID"],
             name=row["Name"],
             image_url=row["ImageURL"]
         )
 
-@router.get("", response_model=list[PlantView])
+@router.get("", response_model=list[PlantSchema])
 async def get_plants(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-) -> list[PlantView]:
+) -> list[PlantSchema]:
     async with db.execute_fetchall("""
         SELECT Plants.ID as ID, Name, URL as ImageURL FROM Plants
         LEFT JOIN Images ON Plants.ImageID = Images.ID
         WHERE UserID = ?
     """, (user_id, )) as plants:
-        return [PlantView.from_row(row) for row in plants]
+        return [PlantSchema.from_row(row) for row in plants]
 
-@router.get("/{plant_id}", response_model=PlantView)
+@router.get("/{plant_id}", response_model=PlantSchema)
 async def get_plant(
     plant_id: int,
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-) -> PlantView:
+) -> PlantSchema:
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=401, detail="Plant does not belong to this user")
 
@@ -60,16 +59,17 @@ async def get_plant(
         row = await cursor.fetchone()
         if row is None:
             raise HTTPException(status_code=404, detail="Plant does not exist")
-        return PlantView.from_row(row)
+        return PlantSchema.from_row(row)
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=PlantView)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=PlantSchema)
 async def add_plant(
     name: str = Form(...),
     picture: UploadFile | None = File(...),
     user_id: int = Depends(authorize),
     imgbb_api_key: str = Depends(get_imgbb_api_key),
-    db: Connection = Depends(get_db)
-) -> PlantView:
+    db: Connection = Depends(get_db),
+    achievement_system: AchievementSystem = Depends(AchievementSystem)
+) -> PlantSchema:
     image_id: int | None = None
     url: str | None = None
     if picture is not None and picture.size != 0:
@@ -90,7 +90,8 @@ async def add_plant(
     plant_id = row[0]
 
     await db.commit()
-    return PlantView(
+    await achievement_system.plant_achievements(db, user_id)
+    return PlantSchema(
         id=plant_id,
         name=name,
         image_url = url
@@ -114,17 +115,13 @@ async def delete_plant(
 async def delete_image(plant_id: int, db: Connection) -> None:
     async with db.execute("SELECT ImageID FROM Plants WHERE ID = ?", (plant_id,)) as cursor:
         row = await cursor.fetchone()
-    if row is None:
+    if row is None or (image_id := row[0]) is None:
         return
-
-    image_id: int = row[0]
 
     async with db.execute("SELECT DeleteUrl FROM Images WHERE ID = ?", (image_id,)) as cursor:
         row = await cursor.fetchone()
-    if row is None:
+    if row is None or (delete_url := row[0]) is None:
         raise HTTPException(status_code=500, detail="Image resource has no delete URL")
-
-    delete_url: str = row[0]
 
     async with httpx.AsyncClient() as client:
         response = await client.delete(delete_url)

@@ -19,7 +19,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
     await init_db()
     yield
 
-app = FastAPI()
+app = FastAPI(lifespan=lifespan)
 app.include_router(router)
 # noinspection PyTypeChecker
 app.add_middleware(

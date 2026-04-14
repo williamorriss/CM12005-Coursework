@@ -194,7 +194,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/api.sensors": {
+    "/api/sensors": {
         parameters: {
             query?: never;
             header?: never;
@@ -202,17 +202,17 @@ export interface paths {
             cookie?: never;
         };
         /** Get User Sensors */
-        get: operations["get_user_sensors_api_api_sensors_get"];
+        get: operations["get_user_sensors_api_sensors_get"];
         put?: never;
         /** Add Sensor */
-        post: operations["add_sensor_api_api_sensors_post"];
+        post: operations["add_sensor_api_sensors_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/api.sensors/{sensor_id}/session": {
+    "/api/sensors/{sensor_id}/session": {
         parameters: {
             query?: never;
             header?: never;
@@ -222,15 +222,15 @@ export interface paths {
         get?: never;
         put?: never;
         /** Activate Sensor */
-        post: operations["activate_sensor_api_api_sensors__sensor_id__session_post"];
+        post: operations["activate_sensor_api_sensors__sensor_id__session_post"];
         /** Deactivate Sensor */
-        delete: operations["deactivate_sensor_api_api_sensors__sensor_id__session_delete"];
+        delete: operations["deactivate_sensor_api_sensors__sensor_id__session_delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/api.sensors/{sensor_id}": {
+    "/api/sensors/{sensor_id}": {
         parameters: {
             query?: never;
             header?: never;
@@ -241,13 +241,13 @@ export interface paths {
         put?: never;
         post?: never;
         /** Del Sensor */
-        delete: operations["del_sensor_api_api_sensors__sensor_id__delete"];
+        delete: operations["del_sensor_api_sensors__sensor_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/api.sensors/{sensor_id}/stream": {
+    "/api/sensors/{sensor_id}/stream": {
         parameters: {
             query?: never;
             header?: never;
@@ -255,9 +255,43 @@ export interface paths {
             cookie?: never;
         };
         /** Get Sensor Stream */
-        get: operations["get_sensor_stream_api_api_sensors__sensor_id__stream_get"];
+        get: operations["get_sensor_stream_api_sensors__sensor_id__stream_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/achievements/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Subscribe Achievements */
+        get: operations["subscribe_achievements_api_achievements_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/achievements/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test */
+        post: operations["test_api_achievements_test_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -285,6 +319,11 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AchievementSchema */
+        AchievementSchema: {
+            /** Code */
+            code: string;
+        };
         /** Body_add_plant_api_plants_post */
         Body_add_plant_api_plants_post: {
             /** Name */
@@ -292,8 +331,8 @@ export interface components {
             /** Picture */
             picture: string | null;
         };
-        /** Body_add_sensor_api_api_sensors_post */
-        Body_add_sensor_api_api_sensors_post: {
+        /** Body_add_sensor_api_sensors_post */
+        Body_add_sensor_api_sensors_post: {
             /** Name */
             name: string;
             /** Plant Id */
@@ -316,8 +355,8 @@ export interface components {
          * @enum {string}
          */
         LogField: "temperature" | "ph" | "inserted_timestamp";
-        /** LogView */
-        LogView: {
+        /** LogSchema */
+        LogSchema: {
             /** Temperature */
             temperature: number | null;
             /** Ph */
@@ -325,8 +364,8 @@ export interface components {
             /** Collected Timestamp */
             collected_timestamp: string | null;
         };
-        /** NoteView */
-        NoteView: {
+        /** NoteSchema */
+        NoteSchema: {
             /** Id */
             id: number;
             /** Plant Id */
@@ -341,8 +380,8 @@ export interface components {
              */
             timestamp: string;
         };
-        /** PlantView */
-        PlantView: {
+        /** PlantSchema */
+        PlantSchema: {
             /** Id */
             id: number;
             /** Name */
@@ -350,8 +389,8 @@ export interface components {
             /** Image Url */
             image_url: string | null;
         };
-        /** SensorView */
-        SensorView: {
+        /** SensorSchema */
+        SensorSchema: {
             /** Sensor Id */
             sensor_id: number;
             /** Plant Id */
@@ -359,8 +398,8 @@ export interface components {
             /** Name */
             name: string;
         };
-        /** UserSession */
-        UserSession: {
+        /** UserSchema */
+        UserSchema: {
             /** Username */
             username: string;
             /**
@@ -486,7 +525,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserSession"];
+                    "application/json": components["schemas"]["UserSchema"];
                 };
             };
         };
@@ -551,7 +590,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["LogView"][];
+                    "application/json": components["schemas"]["LogSchema"][];
                 };
             };
             /** @description Validation Error */
@@ -582,7 +621,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NoteView"][];
+                    "application/json": components["schemas"]["NoteSchema"][];
                 };
             };
             /** @description Validation Error */
@@ -617,7 +656,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NoteView"];
+                    "application/json": components["schemas"]["NoteSchema"];
                 };
             };
             /** @description Validation Error */
@@ -676,7 +715,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantView"][];
+                    "application/json": components["schemas"]["PlantSchema"][];
                 };
             };
         };
@@ -700,7 +739,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantView"];
+                    "application/json": components["schemas"]["PlantSchema"];
                 };
             };
             /** @description Validation Error */
@@ -731,7 +770,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantView"];
+                    "application/json": components["schemas"]["PlantSchema"];
                 };
             };
             /** @description Validation Error */
@@ -774,7 +813,7 @@ export interface operations {
             };
         };
     };
-    get_user_sensors_api_api_sensors_get: {
+    get_user_sensors_api_sensors_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -789,12 +828,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SensorView"][];
+                    "application/json": components["schemas"]["SensorSchema"][];
                 };
             };
         };
     };
-    add_sensor_api_api_sensors_post: {
+    add_sensor_api_sensors_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -803,7 +842,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_add_sensor_api_api_sensors_post"];
+                "application/x-www-form-urlencoded": components["schemas"]["Body_add_sensor_api_sensors_post"];
             };
         };
         responses: {
@@ -813,7 +852,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SensorView"];
+                    "application/json": components["schemas"]["SensorSchema"];
                 };
             };
             /** @description Validation Error */
@@ -827,7 +866,7 @@ export interface operations {
             };
         };
     };
-    activate_sensor_api_api_sensors__sensor_id__session_post: {
+    activate_sensor_api_sensors__sensor_id__session_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -858,7 +897,7 @@ export interface operations {
             };
         };
     };
-    deactivate_sensor_api_api_sensors__sensor_id__session_delete: {
+    deactivate_sensor_api_sensors__sensor_id__session_delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -889,7 +928,7 @@ export interface operations {
             };
         };
     };
-    del_sensor_api_api_sensors__sensor_id__delete: {
+    del_sensor_api_sensors__sensor_id__delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -920,7 +959,7 @@ export interface operations {
             };
         };
     };
-    get_sensor_stream_api_api_sensors__sensor_id__stream_get: {
+    get_sensor_stream_api_sensors__sensor_id__stream_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -947,6 +986,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    subscribe_achievements_api_achievements_stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE for new achievements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["AchievementSchema"];
+                };
+            };
+        };
+    };
+    test_api_achievements_test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
         };

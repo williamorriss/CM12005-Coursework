@@ -3,12 +3,20 @@ import {type JSX, useEffect, useState } from "react";
 import "./Home.css";
 import Plants from "./PlantBar"
 import {type NavigateFunction, useNavigate} from 'react-router-dom'
-import { api } from "../../api/api";
-import type { components } from "../../api/types"
+import { api, type Achievement, type Plant } from "../../api";
+import { useAchievementEffect } from "../../Achievements";
 
-type PlantView = components["schemas"]["PlantView"];
+// const testSubscribe = async () => {
+//     const {error} = await api.POST("/api/achievements/test", {} as any);
+//     if (error) throw error;
+// }
+
 
 export default function Home() : JSX.Element {
+    useAchievementEffect((achievement: Achievement) => {
+        alert(`You got achievment code: ${achievement.code} :>`)
+    })
+
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
@@ -33,12 +41,12 @@ type LoginProps = {
 }
 
 function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.Element {
-    const [plants, setPlants] = useState<PlantView[]>([]);
+    const [plants, setPlants] = useState<Plant[]>([]);
     const deletePlant = (id: number) => {
         setPlants(plants.filter(plant => plant.id !== id));
     }
 
-    const addPlant = (plant: PlantView) => {
+    const addPlant = (plant: Plant) => {
         setPlants([...plants, plant]);
     }
 
@@ -82,7 +90,7 @@ function LoggedOut({login}: LogoutProps) : JSX.Element {
 }
 
 
-function AddPlantForm({ addPlant } : { addPlant: ( plants: PlantView) => void}): JSX.Element {
+function AddPlantForm({ addPlant } : { addPlant: ( plants: Plant) => void}): JSX.Element {
     const handleSubmit = async (form: FormData) => {
         const pictureFile = form.get("picture")! as File;
         const formData = new FormData();
@@ -101,7 +109,7 @@ function AddPlantForm({ addPlant } : { addPlant: ( plants: PlantView) => void}):
             alert(error);
         }
 
-        addPlant(data as PlantView);
+        addPlant(data as Plant);
     };
 
     return (

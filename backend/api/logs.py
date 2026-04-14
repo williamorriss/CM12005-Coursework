@@ -10,15 +10,14 @@ from enum import Enum
 
 router = APIRouter(prefix="/logging")
 
-
-class LogView(BaseModel):
+class LogSchema(BaseModel):
     temperature: float | None
     ph: float | None
     collected_timestamp: datetime | None
 
     @staticmethod
-    def from_row(row: Row) -> "LogView":
-        return LogView(
+    def from_row(row: Row) -> "LogSchema":
+        return LogSchema(
             temperature=row["Temperature"],
             ph=row["pH"],
             collected_timestamp=row["CollectedTimestamp"],
@@ -30,7 +29,7 @@ class LogField(str, Enum):
     inserted_timestamp = "inserted_timestamp"
 
 
-@router.get("/", response_model=list[LogView])
+@router.get("/", response_model=list[LogSchema])
 async def get_logs(
     plant_id: int | None = None,
     sensor_id: int | None = None,
@@ -39,7 +38,7 @@ async def get_logs(
     include: list[LogField] | None = None,
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
-) -> list[LogView]:
+) -> list[LogSchema]:
     if plant_id is not None:
         if not await owns_plant(user_id, plant_id, db):
             raise HTTPException(status_code=401, detail="Does not own plant.")
@@ -63,4 +62,4 @@ async def get_logs(
         "date_from": date_from,
         "date_to": date_to,
     } ) as logs:
-        return list(map(LogView.from_row, logs))
+        return list(map(LogSchema.from_row, logs))

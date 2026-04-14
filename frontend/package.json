@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "gen:api": "openapi-typescript http://localhost:8000/openapi.json -o src/api/types.ts",
-    "dev": "npm run gen:api && vite",
+    "predev": "openapi-typescript http://localhost:8000/openapi.json -o src/api/types.ts",
+    "dev": "npx vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"

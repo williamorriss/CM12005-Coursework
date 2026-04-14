@@ -16,7 +16,7 @@ from typing import cast
 
 router = APIRouter(prefix="/auth")
 
-class UserSession(BaseModel):
+class UserSchema(BaseModel):
     username: str
     date_joined: datetime
     profile_picture: str | None
@@ -136,8 +136,8 @@ async def cas_callback(
         print(err)
         raise HTTPException(status_code=500, detail="Server error")
 
-@router.get("/session", response_model=UserSession)
-async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSession:
+@router.get("/session", response_model=UserSchema)
+async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSchema:
     async with db.execute(
          "SELECT Username, DateJoined, URL FROM Users LEFT JOIN Images ON ImageID = Images.ID WHERE Users.ID = ?", (user_id,)
     ) as cursor:
@@ -147,7 +147,7 @@ async def retrieve_session(user_id: int = Depends(authorize), db: Connection = D
         raise HTTPException(status_code=404, detail="User not found")
 
     username, date_joined, profile_picture = row
-    return UserSession(username=username, date_joined=date_joined, profile_picture=profile_picture)
+    return UserSchema(username=username, date_joined=date_joined, profile_picture=profile_picture)
 
 @router.get("/refresh", response_class=Response)
 async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = Depends(authorize)) -> Response:

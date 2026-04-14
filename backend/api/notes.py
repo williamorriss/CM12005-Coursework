@@ -11,8 +11,7 @@ from datetime import datetime
 
 router = APIRouter(prefix="/plants/{plant_id}/notes")
 
-
-class NoteView(BaseModel):
+class NoteSchema(BaseModel):
     id: int
     plant_id: int
     note: str
@@ -20,8 +19,8 @@ class NoteView(BaseModel):
     timestamp: datetime
 
     @staticmethod
-    def from_row(row: Row) -> "NoteView":
-        return NoteView(
+    def from_row(row: Row) -> "NoteSchema":
+        return NoteSchema(
             id=row["ID"],
             plant_id=row["PlantID"],
             note=row["Note"],
@@ -31,28 +30,28 @@ class NoteView(BaseModel):
 
 
 
-@router.get("", response_model=list[NoteView])
+@router.get("", response_model=list[NoteSchema])
 async def get_notes(
         plant_id: int,
         user_id: int = Depends(authorize),
         db: Connection = Depends(get_db)
-) -> list[NoteView]:
+) -> list[NoteSchema]:
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
     async with db.execute_fetchall(
             "SELECT ID, PlantID, Note, Rating, Timestamp FROM Notes WHERE PlantID = ?"
             , (plant_id, )) as notes:
-        return [NoteView.from_row(note) for note in notes]
+        return [NoteSchema.from_row(note) for note in notes]
 
-@router.post("", status_code=status.HTTP_201_CREATED, response_model=NoteView)
+@router.post("", status_code=status.HTTP_201_CREATED, response_model=NoteSchema)
 async def post_note(
         plant_id: int,
         note: str = Form(...),
         rating: int = Form(...),
         user_id: int = Depends(authorize),
         db: Connection = Depends(get_db)
-) -> NoteView:
+) -> NoteSchema:
     if not await owns_plant(user_id, plant_id, db):
         raise HTTPException(status_code=404, detail="Plants does not belong to this user")
 
@@ -64,7 +63,7 @@ async def post_note(
         await db.commit()
 
     note_id, timestamp = row
-    return NoteView(
+    return NoteSchema(
         id=note_id,
         plant_id=plant_id,
         note=note,

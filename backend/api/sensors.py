@@ -18,19 +18,19 @@ from fastapi import Request, APIRouter, HTTPException
 
 from sensor import TestSensor
 
-router = APIRouter(prefix="/api.sensors")
+router = APIRouter(prefix="/sensors")
 
-class SensorView(BaseModel):
+class SensorSchema(BaseModel):
     sensor_id: int
     plant_id: int | None
     name: str
 
     @staticmethod
-    def from_row(row: Row) -> "SensorView":
+    def from_row(row: Row) -> "SensorSchema":
         sensor_id = row["ID"]
         name = row["Name"]
         plant_id = row["PlantID"]
-        return SensorView(sensor_id=sensor_id, name=name, plant_id=plant_id)
+        return SensorSchema(sensor_id=sensor_id, name=name, plant_id=plant_id)
 
 
 class SampleView(BaseModel):
@@ -44,15 +44,15 @@ class SampleView(BaseModel):
 def get_sensors(request: Request) -> dict[int, Sensor]:
     return cast(dict[int, Sensor], request.app.state.sensors)
 
-@router.get("", response_model=list[SensorView])
+@router.get("", response_model=list[SensorSchema])
 async def get_user_sensors(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db)
-) -> list[SensorView]:
+) -> list[SensorSchema]:
     async with db.execute_fetchall("""
         SELECT ID, PlantID, Name FROM Sensors WHERE UserID = ? 
     """, (user_id,)) as rows:
-        return [SensorView.from_row(row) for row in rows]
+        return [SensorSchema.from_row(row) for row in rows]
 
 @router.post("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def activate_sensor(
@@ -115,7 +115,7 @@ async def add_sensor(
     plant_id: int | None = Form(...),
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
-) -> SensorView:
+) -> SensorSchema:
     async with db.execute(
         "INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)",
         (user_id, plant_id, name)
@@ -125,7 +125,7 @@ async def add_sensor(
 
     assert sensor_id is not None
 
-    return SensorView(
+    return SensorSchema(
         sensor_id = sensor_id,
         name=name,
         plant_id=plant_id,
