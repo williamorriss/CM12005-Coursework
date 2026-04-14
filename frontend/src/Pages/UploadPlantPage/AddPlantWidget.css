@@ -1,0 +1,32 @@
+.upload-plant-widget {
+    background-color: #e1ecdc;
+    border-radius: 40px;
+    border-color: black;
+    border-width: 5px;
+    border-style: solid;
+    max-width: 50%;
+}
+
+.upload-plant-widget-section {
+    display: block;
+    background-color: #dcdedc;
+    border-radius: 20px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    margin-bottom: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    place-items: left;
+    text-align: left;
+}
+
+.upload-plant-widget > input {
+}
+
+.file-drag-box {
+    width: 100%;
+    /* height: 10vh; */
+    background-color: greenyellow;
+}
