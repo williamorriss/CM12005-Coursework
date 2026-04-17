@@ -18,6 +18,8 @@ export default function FileInputBox({ file, onFileSelected }: { file: File | nu
 
         if (e.dataTransfer.files.length != 1) return;
 
+        if (!e.dataTransfer.files[0].type.startsWith("image/")) return;
+
         onFileSelected(e.dataTransfer.files[0]);
     };
 
@@ -27,14 +29,6 @@ export default function FileInputBox({ file, onFileSelected }: { file: File | nu
         }
     }
 
-    const onClick = (e: Event) => {
-        fileInputRef.current!.click()
-        e.stopPropagation();
-    }
-
-    if (file) {
-        console.log(URL.createObjectURL(file));
-    }
     const sectionContents = file ? 
     (
         <>
@@ -49,20 +43,25 @@ export default function FileInputBox({ file, onFileSelected }: { file: File | nu
 
     return (
         <>
-            <input hidden ref={fileInputRef} type="file" onChange={onSubmitFile}/>
+            <input
+                hidden
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={onSubmitFile}
+            />
+
             <div
                 className="file-drag-box"
                 onDrop={handleDrop}
                 onDragOver={handleDragOver}
                 onDragEnter={handleDragEnter}
                 onDragLeave={handleDragLeave}
-                onClick={onClick}
                 style={{
                     backgroundColor: isDragging ? fileHoverBGColor : noFileHoverBGColor,
                 }}
             >
                 {sectionContents}
-
             </div>
         </>
     )
