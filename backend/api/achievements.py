@@ -1,23 +1,23 @@
-from typing import cast, AsyncIterable
+from typing import AsyncIterable, cast
 
 from aiosqlite import Connection
-from fastapi import Request
-from db import get_db
-
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
 
-from achievements import AchievementEvent, AchievementSystem
-from fastapi import APIRouter, Depends, status
+from achievements import AchievementCode, AchievementEvent, AchievementSystem
 from api.auth import authorize
+from db import get_db
 
 router = APIRouter(prefix="/achievements")
+
 
 class AchievementSchema(BaseModel):
     """
     Schema for achievement data from backend -> frontend.
     """
+
     code: str
 
     @staticmethod
@@ -25,7 +25,7 @@ class AchievementSchema(BaseModel):
         """
         Constructor to turn an AchievementEvent (internal representation) -> AchievementSchema (api schema).
         Args:
-            event: AchievementEvent internal achievement object created by a route when the conditions for an 
+            event: AchievementEvent internal achievement object created by a route when the conditions for an
                 achievement are met.
 
         Returns:
@@ -40,6 +40,7 @@ def get_imgbb_api_key(request: Request) -> str:
     """
     return cast(str, request.app.state.IMGBB_API_KEY)
 
+
 @router.get(
     "/stream",
     response_class=EventSourceResponse,
@@ -48,36 +49,37 @@ def get_imgbb_api_key(request: Request) -> str:
             "model": AchievementSchema,
             "description": "SSE for new achievements",
         }
-    }
+    },
 )
 async def subscribe_achievements(
     user_id: int = Depends(authorize),
     achievements: AchievementSystem = Depends(AchievementSystem),
 ) -> AsyncIterable[AchievementSchema]:
     """
-    Method to create a 
+    Method to create a
     """
-    uuid, queue = achievements.create_listener(user_id)
+    queue = achievements.create_listener(user_id)
     try:
         while True:
             event = await queue.get()
             yield AchievementSchema.from_event(event)
     finally:
-        achievements.remove_listener(user_id, uuid)
+        achievements.remove_listener(user_id, queue)
+
 
 @router.post("/test")
-async def test (
+async def test(
     user_id: int = Depends(authorize),
     achievements: AchievementSystem = Depends(AchievementSystem),
 ) -> JSONResponse:
-    await achievements.send(user_id, AchievementEvent("test"))
+    achievements.send(user_id, AchievementEvent(AchievementCode.P10))
     print("test achievement")
     return JSONResponse(content="posted", status_code=status.HTTP_200_OK)
 
+
 @router.delete("")
 async def delete_achievements(
-    user_id: int = Depends(authorize),
-    db: Connection = Depends(get_db)
+    user_id: int = Depends(authorize), db: Connection = Depends(get_db)
 ) -> JSONResponse:
     await db.execute("DELETE FROM achievements WHERE UserID = ?", (user_id,))
     return JSONResponse(content="deleted", status_code=status.HTTP_200_OK)

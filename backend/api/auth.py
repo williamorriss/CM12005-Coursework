@@ -1,21 +1,23 @@
 # Bath auth w/ CAS. Here are the docs or just trust me ;-;
 # https://unicon.github.io/cas/development/protocol/CAS-Protocol-V2-Specification.html
-from db import get_db
-from aiosqlite import Connection, OperationalError
-from fastapi.requests import Request
-from fastapi import APIRouter, Depends
-import jwt
 import base64
-from fastapi.responses import RedirectResponse, Response
 import xml.etree.ElementTree as ET
-from fastapi import HTTPException
-import httpx
-from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 from typing import cast
-from config import AppConfig
+
+import httpx
+import jwt
+from aiosqlite import Connection, OperationalError
+from fastapi import APIRouter, Depends, HTTPException
+from fastapi.requests import Request
+from fastapi.responses import RedirectResponse, Response
+from pydantic import BaseModel
+
+from config import AppConfig, get_config
+from db import get_db
 
 router = APIRouter(prefix="/auth")
+
 
 class UserSchema(BaseModel):
     username: str
@@ -24,7 +26,7 @@ class UserSchema(BaseModel):
 
 
 def authorize(request: Request) -> int:
-    config = AppConfig.get_config(request)
+    config = get_config(request)
     auth_token = request.cookies.get("auth-token")
     if auth_token is None:
         raise HTTPException(status_code=401, detail="No auth token")
@@ -42,12 +44,13 @@ def authorize(request: Request) -> int:
 
     return cast(int, claims["user_id"])
 
+
 # endpoints
+
 
 @router.get("/login", response_class=RedirectResponse)
 async def login(
-    redirect: str,
-    config: AppConfig = Depends(AppConfig.get_config)
+    redirect: str, config: AppConfig = Depends(get_config)
 ) -> RedirectResponse:
     try:
         redirect_url = httpx.URL(redirect)
@@ -56,28 +59,29 @@ async def login(
     except httpx.InvalidURL:
         raise HTTPException(status_code=400, detail="Redirect is not a valid URL")
 
-    redirect64 = (base64.urlsafe_b64encode(redirect.encode("utf-8")).decode("utf-8"))
+    redirect64 = base64.urlsafe_b64encode(redirect.encode("utf-8")).decode("utf-8")
 
     # redirect url treated as a resource to avoid complications with cas adding queries
     # whilst still wanting an exact url ( just trust me )
     # Base64 is used to avoid annoying http url escaping
     callback = f"{config.origin}/api/auth/cas/{redirect64}"
     return RedirectResponse(
-        url=f"{config.cas_origin}/login?service={callback}",
-        status_code=302
+        url=f"{config.cas_origin}/login?service={callback}", status_code=302
     )
 
+
 @router.get("/logout", response_class=RedirectResponse)
-async def logout(config: AppConfig = Depends(AppConfig.get_config)) -> RedirectResponse:
+async def logout(config: AppConfig = Depends(get_config)) -> RedirectResponse:
     response = RedirectResponse(url=f"{config.cas_origin}/logout", status_code=302)
     response.delete_cookie("auth-token")
     return response
+
 
 @router.get("/cas/{redirect64}", response_class=RedirectResponse)
 async def cas_callback(
     redirect64: str,
     ticket: str,
-    config: AppConfig = Depends(AppConfig.get_config),
+    config: AppConfig = Depends(get_config),
     db: Connection = Depends(get_db),
 ) -> RedirectResponse:
     try:
@@ -89,16 +93,18 @@ async def cas_callback(
         raise HTTPException(status_code=400, detail="Redirect is not a valid URL")
 
     try:
-        username = await get_username(redirect64, ticket, config.origin, config.cas_origin)
+        username = await get_username(
+            redirect64, ticket, config.origin, config.cas_origin
+        )
         if (user_id := await get_user_id(db, username)) is None:
             if (user_id := await create_user(db, username)) is None:
                 raise HTTPException(status_code=500, detail="Failed to create new user")
 
         expires = datetime.now(timezone.utc) + timedelta(hours=1)
         token = jwt.encode(
-            {"user_id": user_id, "exp" : int(expires.timestamp())},
+            {"user_id": user_id, "exp": int(expires.timestamp())},
             key=config.jwt_key,
-            algorithm="HS256"
+            algorithm="HS256",
         )
 
         response = RedirectResponse(url=str(redirect), status_code=302)
@@ -106,7 +112,7 @@ async def cas_callback(
             key="auth-token",
             value=token,
             httponly=True,
-            secure=False,    # set true if deploying
+            secure=False,  # set true if deploying
             samesite="lax",
             expires=expires,
         )
@@ -121,10 +127,17 @@ async def cas_callback(
         print(err)
         raise HTTPException(status_code=500, detail="Server error")
 
+
 @router.get("/session", response_model=UserSchema)
-async def retrieve_session(user_id: int = Depends(authorize), db: Connection = Depends(get_db)) -> UserSchema:
+async def retrieve_session(
+    user_id: int = Depends(authorize), db: Connection = Depends(get_db)
+) -> UserSchema:
     async with db.execute(
-         "SELECT Username, DateJoined, URL FROM Users LEFT JOIN Images ON ImageID = Images.ID WHERE Users.ID = ?", (user_id,)
+        """
+        SELECT Username, DateJoined, URL FROM Users 
+        LEFT JOIN Images ON ImageID = Images.ID 
+        WHERE Users.ID = ?""",
+        (user_id,),
     ) as cursor:
         row = await cursor.fetchone()
 
@@ -132,15 +145,20 @@ async def retrieve_session(user_id: int = Depends(authorize), db: Connection = D
         raise HTTPException(status_code=404, detail="User not found")
 
     username, date_joined, profile_picture = row
-    return UserSchema(username=username, date_joined=date_joined, profile_picture=profile_picture)
+    return UserSchema(
+        username=username, date_joined=date_joined, profile_picture=profile_picture
+    )
+
 
 @router.get("/refresh", response_class=Response)
-async def refresh_token(config: AppConfig = Depends(AppConfig.get_config), user_id: int = Depends(authorize)) -> Response:
+async def refresh_token(
+    config: AppConfig = Depends(get_config), user_id: int = Depends(authorize)
+) -> Response:
     expires = datetime.now(timezone.utc) + timedelta(hours=1)
     token = jwt.encode(
-        {"user_id": user_id, "exp" : int(expires.timestamp())},
+        {"user_id": user_id, "exp": int(expires.timestamp())},
         key=config.jwt_key,
-        algorithm="HS256"
+        algorithm="HS256",
     )
 
     response = Response(status_code=200)
@@ -148,21 +166,22 @@ async def refresh_token(config: AppConfig = Depends(AppConfig.get_config), user_
         key="auth-token",
         value=token,
         httponly=True,
-        secure=False,    # set true if deploying
+        secure=False,  # set true if deploying
         samesite="lax",
         expires=expires,
     )
 
     return response
 
+
 @router.get("/delete", response_class=RedirectResponse)
 async def delete_user(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
-    config: AppConfig = Depends(AppConfig.get_config)
+    config: AppConfig = Depends(get_config),
 ) -> RedirectResponse:
     try:
-        async with db.execute("DELETE FROM users WHERE id = ?",(user_id,)) as cursor:
+        async with db.execute("DELETE FROM users WHERE id = ?", (user_id,)) as cursor:
             await db.commit()
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=404, detail="User not found")
@@ -174,15 +193,15 @@ async def delete_user(
     except OperationalError:
         raise HTTPException(status_code=500, detail="Server error")
 
+
 async def get_username(
-        redirect64: str,
-        ticket: str,
-        origin: str,
-        cas_origin: str
+    redirect64: str, ticket: str, origin: str, cas_origin: str
 ) -> str:
     async with httpx.AsyncClient(base_url=cas_origin) as cas_client:
         service = f"{origin}/api/auth/cas/{redirect64}"
-        response = await cas_client.get(f"/serviceValidate?service={service}&ticket={ticket}")
+        response = await cas_client.get(
+            f"/serviceValidate?service={service}&ticket={ticket}"
+        )
 
     namespaces = {"cas": "http://www.yale.edu/tp/cas"}
     try:
@@ -198,23 +217,29 @@ async def get_username(
     if (success := root.find("cas:authenticationSuccess", namespaces)) is None:
         raise HTTPException(status_code=500, detail="No CAS response")
 
-    if (user := success.findtext("cas:user", namespaces=namespaces) ) is None:
-        raise HTTPException(status_code=500, detail="Server error whilst parsing CAS response")
+    if (user := success.findtext("cas:user", namespaces=namespaces)) is None:
+        raise HTTPException(
+            status_code=500, detail="Server error whilst parsing CAS response"
+        )
 
     return user
 
+
 async def get_user_id(db: Connection, username: str) -> int | None:
     async with db.execute(
-            "SELECT id FROM users WHERE username = ?",
-            (username,)
+        "SELECT id FROM users WHERE username = ?", (username,)
     ) as cursor:
         row = await cursor.fetchone()
         return row[0] if row else None
 
+
 async def create_user(db: Connection, username: str) -> int | None:
-    async with db.execute("INSERT INTO users (username) VALUES (?)", (username,)) as cursor:
+    async with db.execute(
+        "INSERT INTO users (username) VALUES (?)", (username,)
+    ) as cursor:
         await db.commit()
         return cursor.lastrowid
 
+
 def strip_origin(url: httpx.URL) -> str:
-    return str(url.join('/')).rstrip('/')
+    return str(url.join("/")).rstrip("/")

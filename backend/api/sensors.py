@@ -1,24 +1,19 @@
-import asyncio
 from collections.abc import AsyncIterable
 from datetime import datetime
 from typing import cast
 
+from aiosqlite import Connection, Row
+from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi.responses import JSONResponse, Response
 from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
-from fastapi.responses import Response
-from fastapi import status, Form
-from fastapi.responses import JSONResponse
 
-from sensor import Sensor, Sample
-from aiosqlite import Connection, Row
-from db import get_db
-from fastapi import Depends
 from api.auth import authorize
-from fastapi import Request, APIRouter, HTTPException
-
-from sensor import TestSensor
+from db import get_db
+from sensor import Sample, SensorSystem
 
 router = APIRouter(prefix="/sensors")
+
 
 class SensorSchema(BaseModel):
     sensor_id: int
@@ -37,77 +32,85 @@ class SampleView(BaseModel):
     temperature: float
     ph: float
     timestamp: datetime
+
     @staticmethod
     def from_sample(sample: Sample) -> "SampleView":
-        return SampleView(temperature=sample.temperature, ph=sample.ph, timestamp=sample.timestamp)
+        return SampleView(
+            temperature=sample.temperature, ph=sample.ph, timestamp=sample.timestamp
+        )
 
-def get_sensors(request: Request) -> dict[int, Sensor]:
-    return cast(dict[int, Sensor], request.app.state.sensors)
 
 @router.get("", response_model=list[SensorSchema])
 async def get_user_sensors(
-    user_id: int = Depends(authorize),
-    db: Connection = Depends(get_db)
+    user_id: int = Depends(authorize), db: Connection = Depends(get_db)
 ) -> list[SensorSchema]:
-    async with db.execute_fetchall("""
+    async with db.execute_fetchall(
+        """
         SELECT ID, PlantID, Name FROM Sensors WHERE UserID = ? 
-    """, (user_id,)) as rows:
+    """,
+        (user_id,),
+    ) as rows:
         return [SensorSchema.from_row(row) for row in rows]
+
 
 @router.post("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def activate_sensor(
     sensor_id: int,
-    _user_id: int = Depends(authorize), # authorized endpoint
-    sensors: dict[int, Sensor] = Depends(get_sensors),
+    user_id: int = Depends(authorize),  # authorized endpoint
+    sensors: SensorSystem = Depends(SensorSystem),
     db: Connection = Depends(get_db),
 ) -> JSONResponse:
-    if sensor_id in sensors:
-        # already running
-        sensors[sensor_id].start()
-        return JSONResponse(
-            status_code=status.HTTP_200_OK,
-            content={"message" : "No change; sensor already running"}
+    if not (await _owns_sensor(user_id, sensor_id, db)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sensor does not exist, or does not belong to this user",
         )
 
-    async with db.execute("""
-        SELECT PlantID, Name FROM Sensors WHERE ID = ? 
-    """, (sensor_id,)) as cursor:
-        row = await cursor.fetchone()
+    if sensors.is_active(sensor_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Sensor {sensor_id} is already active",
+        )
 
-    if row is None:
-        raise HTTPException(status_code=404, detail="Sensor not found")
-
-    sensor = TestSensor.from_row(row)
-    sensor.start()
-    sensors[sensor_id] = sensor
+    try:
+        await sensors.activate_sensor(sensor_id)
+    except Exception as e:
+        print(e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
 
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
-        content= {"message" : f"Sensor {sensor_id} activated"}
+        content={"message": f"Sensor {sensor_id} activated"},
     )
+
 
 @router.delete("/{sensor_id}/session", status_code=status.HTTP_200_OK)
 async def deactivate_sensor(
     sensor_id: int,
-    _user_id: int = Depends(authorize), # authorized endpoint
-    sensors: dict[int, Sensor] = Depends(get_sensors),
+    user_id: int = Depends(authorize),  # authorized endpoint
+    sensors: SensorSystem = Depends(SensorSystem),
+    db: Connection = Depends(get_db),
 ) -> Response:
-    if sensor_id not in sensors:
-        raise HTTPException(status_code=404, detail="Sensor not found")
-
-    sensor = sensors[sensor_id]
-    if not sensor.is_running():
-        return Response(
-            status_code=status.HTTP_304_NOT_MODIFIED,
-            content={"message": f"Sensor {sensor_id} not currently active"},
+    if not (await _owns_sensor(user_id, sensor_id, db)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sensor does not exist, or does not belong to this user",
         )
 
-    sensor.stop()
+    if not sensors.is_active(sensor_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="sensor is not active"
+        )
+
+    sensors.deactivate_sensor(sensor_id)
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={ "message" : f"Sensor {sensor_id} deactivated" }
+        content={"message": f"Sensor {sensor_id} deactivated"},
     )
+
 
 @router.post("", status_code=status.HTTP_201_CREATED)
 async def add_sensor(
@@ -118,7 +121,7 @@ async def add_sensor(
 ) -> SensorSchema:
     async with db.execute(
         "INSERT INTO Sensors (UserID, PlantID, Name) VALUES (?, ?, ?)",
-        (user_id, plant_id, name)
+        (user_id, plant_id, name),
     ) as cursor:
         await db.commit()
         sensor_id = cursor.lastrowid
@@ -126,59 +129,54 @@ async def add_sensor(
     assert sensor_id is not None
 
     return SensorSchema(
-        sensor_id = sensor_id,
+        sensor_id=sensor_id,
         name=name,
         plant_id=plant_id,
     )
 
+
 @router.delete("/{sensor_id}", status_code=status.HTTP_200_OK)
-async def del_sensor (
+async def del_sensor(
     sensor_id: int,
-    _user_id: int = Depends(authorize),
+    user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
 ) -> Response:
-    async with db.execute("""
+    if not (await _owns_sensor(user_id, sensor_id, db)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sensor does not exist, or does not belong to this user",
+        )
+
+    async with db.execute(
+        """
          DELETE FROM Sensors WHERE ID = ? 
-    """, (sensor_id,)) :
+    """,
+        (sensor_id,),
+    ):
         await db.commit()
 
     return JSONResponse(
         status_code=status.HTTP_200_OK,
-        content={"message" : f"Sensor {sensor_id} deleted"}
+        content={"message": f"Sensor {sensor_id} deleted"},
     )
 
-# @router.patch("/{sensor_id}")
-# async def update_sensor(
-#     sensor_id: int,
-#     plant_id: int | None = None,
-#     name: str | None = None,
-#     _user_id = Depends(authorize),
-#     db: Connection = Depends(get_db),
-# ):
-#     if plant_id:
-#         await db.execute("""
-#             UPDATE Sensors SET PlantID = ? WHERE ID = ?
-#         """, (plant_id, sensor_id))
-#
-#     if name:
-#         await db.execute("""
-#             UPDATE Sensors SET Name = ? WHERE ID = ?
-#         """, (name, sensor_id))
-#
-#     await db.commit()
 
 @router.get("/{sensor_id}/stream", response_class=EventSourceResponse)
 async def get_sensor_stream(
     request: Request,
     sensor_id: int,
-    sensors: dict[int, Sensor] = Depends(get_sensors),
+    user_id: int = Depends(authorize),
+    sensors: SensorSystem = Depends(SensorSystem),
+    db: Connection = Depends(get_db),
 ) -> AsyncIterable[SampleView]:
-    out: asyncio.Queue[Sample] = asyncio.Queue()
-    if sensor_id not in sensors:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sensor not found")
+    if not (await _owns_sensor(user_id, sensor_id, db)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sensor does not exist, or does not belong to this user",
+        )
 
-    sensor = sensors[sensor_id]
-    sensor.add_watcher(out)
+    out = sensors.attach_sensor(sensor_id)
+
     try:
         while True:
             if await request.is_disconnected():
@@ -186,4 +184,14 @@ async def get_sensor_stream(
             data = SampleView.from_sample(await out.get())
             yield data
     finally:
-        sensor.remove_watcher(out)
+        sensors.detatch_sensor(sensor_id, out)
+
+
+async def _owns_sensor(user_id: int, sensor_id: int, db: Connection) -> bool:
+    async with db.execute(
+        "SELECT EXISTS(SELECT 1 FROM Sensors WHERE UserID = ? AND ID = ?)",
+        (user_id, sensor_id),
+    ) as cursor:
+        row = await cursor.fetchone()
+    assert row is not None
+    return bool(cast(int, row[0]))
