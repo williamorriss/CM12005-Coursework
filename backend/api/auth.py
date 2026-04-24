@@ -13,6 +13,7 @@ import httpx
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
 from typing import cast
+from config import AppConfig
 
 router = APIRouter(prefix="/auth")
 
@@ -21,20 +22,9 @@ class UserSchema(BaseModel):
     date_joined: datetime
     profile_picture: str | None
 
-# extractors
-def get_allowed_origins(request: Request) -> list[str]:
-    return cast(list[str], request.app.state.ALLOWED_ORIGINS)
-
-def get_cas_origin(request: Request) -> str:
-    return cast(str, request.app.state.CAS_ORIGIN)
-
-def get_origin(request: Request) -> str:
-    return cast(str, request.app.state.ORIGIN)
-
-def get_auth_key(request: Request) -> str:
-    return cast(str, request.app.state.JWT_SIGNING_KEY)
 
 def authorize(request: Request) -> int:
+    config = AppConfig.get_config(request)
     auth_token = request.cookies.get("auth-token")
     if auth_token is None:
         raise HTTPException(status_code=401, detail="No auth token")
@@ -42,7 +32,7 @@ def authorize(request: Request) -> int:
     try:
         claims = jwt.decode(
             jwt=auth_token,
-            key=get_auth_key(request),
+            key=config.jwt_key,
             algorithms=["HS256"],
         )
     except jwt.ExpiredSignatureError:
@@ -57,13 +47,11 @@ def authorize(request: Request) -> int:
 @router.get("/login", response_class=RedirectResponse)
 async def login(
     redirect: str,
-    origin: str = Depends(get_origin),
-    cas_origin: str = Depends(get_cas_origin),
-    allowed_origins: list[str] = Depends(get_allowed_origins),
+    config: AppConfig = Depends(AppConfig.get_config)
 ) -> RedirectResponse:
     try:
         redirect_url = httpx.URL(redirect)
-        if strip_origin(redirect_url) not in allowed_origins:
+        if strip_origin(redirect_url) not in config.allowed_origins:
             raise HTTPException(status_code=400, detail="Bad origin")
     except httpx.InvalidURL:
         raise HTTPException(status_code=400, detail="Redirect is not a valid URL")
@@ -73,15 +61,15 @@ async def login(
     # redirect url treated as a resource to avoid complications with cas adding queries
     # whilst still wanting an exact url ( just trust me )
     # Base64 is used to avoid annoying http url escaping
-    callback = f"{origin}/api/auth/cas/{redirect64}"
+    callback = f"{config.origin}/api/auth/cas/{redirect64}"
     return RedirectResponse(
-        url=f"{cas_origin}/login?service={callback}",
+        url=f"{config.cas_origin}/login?service={callback}",
         status_code=302
     )
 
 @router.get("/logout", response_class=RedirectResponse)
-async def logout(cas_origin: str = Depends(get_cas_origin)) -> RedirectResponse:
-    response = RedirectResponse(url=f"{cas_origin}/logout", status_code=302)
+async def logout(config: AppConfig = Depends(AppConfig.get_config)) -> RedirectResponse:
+    response = RedirectResponse(url=f"{config.cas_origin}/logout", status_code=302)
     response.delete_cookie("auth-token")
     return response
 
@@ -89,22 +77,19 @@ async def logout(cas_origin: str = Depends(get_cas_origin)) -> RedirectResponse:
 async def cas_callback(
     redirect64: str,
     ticket: str,
-    allowed_origins: list[str] = Depends(get_allowed_origins),
-    origin: str = Depends(get_origin),
-    cas_origin: str = Depends(get_cas_origin),
+    config: AppConfig = Depends(AppConfig.get_config),
     db: Connection = Depends(get_db),
-    auth_key: str = Depends(get_auth_key)
 ) -> RedirectResponse:
     try:
         redirect_url = base64.urlsafe_b64decode(redirect64).decode("utf-8")
         redirect = httpx.URL(redirect_url)
-        if strip_origin(redirect) not in allowed_origins:
+        if strip_origin(redirect) not in config.allowed_origins:
             raise HTTPException(status_code=400, detail="Bad origin")
     except httpx.InvalidURL:
         raise HTTPException(status_code=400, detail="Redirect is not a valid URL")
 
     try:
-        username = await get_username(redirect64, ticket, origin, cas_origin)
+        username = await get_username(redirect64, ticket, config.origin, config.cas_origin)
         if (user_id := await get_user_id(db, username)) is None:
             if (user_id := await create_user(db, username)) is None:
                 raise HTTPException(status_code=500, detail="Failed to create new user")
@@ -112,7 +97,7 @@ async def cas_callback(
         expires = datetime.now(timezone.utc) + timedelta(hours=1)
         token = jwt.encode(
             {"user_id": user_id, "exp" : int(expires.timestamp())},
-            key=auth_key,
+            key=config.jwt_key,
             algorithm="HS256"
         )
 
@@ -150,11 +135,11 @@ async def retrieve_session(user_id: int = Depends(authorize), db: Connection = D
     return UserSchema(username=username, date_joined=date_joined, profile_picture=profile_picture)
 
 @router.get("/refresh", response_class=Response)
-async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = Depends(authorize)) -> Response:
+async def refresh_token(config: AppConfig = Depends(AppConfig.get_config), user_id: int = Depends(authorize)) -> Response:
     expires = datetime.now(timezone.utc) + timedelta(hours=1)
     token = jwt.encode(
         {"user_id": user_id, "exp" : int(expires.timestamp())},
-        key=auth_key,
+        key=config.jwt_key,
         algorithm="HS256"
     )
 
@@ -174,7 +159,7 @@ async def refresh_token(auth_key: str = Depends(get_auth_key), user_id: int = De
 async def delete_user(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
-    cas_origin: str = Depends(get_cas_origin)
+    config: AppConfig = Depends(AppConfig.get_config)
 ) -> RedirectResponse:
     try:
         async with db.execute("DELETE FROM users WHERE id = ?",(user_id,)) as cursor:
@@ -182,7 +167,7 @@ async def delete_user(
             if cursor.rowcount == 0:
                 raise HTTPException(status_code=404, detail="User not found")
 
-        response = RedirectResponse(url=f"{cas_origin}/logout", status_code=302)
+        response = RedirectResponse(url=f"{config.cas_origin}/logout", status_code=302)
         response.delete_cookie("auth-token")
         return response
 

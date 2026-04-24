@@ -4,7 +4,7 @@ from fastapi import Request, Form, BackgroundTasks
 from aiosqlite import Connection, Row
 from starlette.responses import Response
 
-from achievements import AchievementSystem
+from achievements import AchievementSystem, plant_achievements
 from db import get_db, owns_plant
 from fastapi import APIRouter, Depends, status, UploadFile, File
 from api.auth import authorize
@@ -91,7 +91,7 @@ async def add_plant(
     plant_id = row[0]
 
     await db.commit()
-    background_tasks.add_task(achievement_system.plant_achievements, user_id) # use background task just in case achievements become slower
+    background_tasks.add_task(plant_achievements, user_id) # use background task just in case achievements become slower
     return PlantSchema(
         id=plant_id,
         name=name,

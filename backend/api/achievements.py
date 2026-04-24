@@ -15,14 +15,29 @@ from api.auth import authorize
 router = APIRouter(prefix="/achievements")
 
 class AchievementSchema(BaseModel):
+    """
+    Schema for achievement data from backend -> frontend.
+    """
     code: str
 
     @staticmethod
     def from_event(event: AchievementEvent) -> "AchievementSchema":
+        """
+        Constructor to turn an AchievementEvent (internal representation) -> AchievementSchema (api schema).
+        Args:
+            event: AchievementEvent internal achievement object created by a route when the conditions for an 
+                achievement are met.
+
+        Returns:
+            New AchievementSchema instance from event.
+        """
         return AchievementSchema(code=event.code)
 
 
 def get_imgbb_api_key(request: Request) -> str:
+    """
+    Dependency injection method to get the (ImgBB)[https://imgbb.com/] api key from the current app state.
+    """
     return cast(str, request.app.state.IMGBB_API_KEY)
 
 @router.get(
@@ -39,13 +54,16 @@ async def subscribe_achievements(
     user_id: int = Depends(authorize),
     achievements: AchievementSystem = Depends(AchievementSystem),
 ) -> AsyncIterable[AchievementSchema]:
-    uuid, queue = achievements.subscribe(user_id)
+    """
+    Method to create a 
+    """
+    uuid, queue = achievements.create_listener(user_id)
     try:
         while True:
             event = await queue.get()
             yield AchievementSchema.from_event(event)
     finally:
-        achievements.unsubscribe(user_id, uuid)
+        achievements.remove_listener(user_id, uuid)
 
 @router.post("/test")
 async def test (

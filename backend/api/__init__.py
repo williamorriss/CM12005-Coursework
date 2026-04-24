@@ -1,3 +1,11 @@
+"""
+api module
+
+Holds code for api endpoints and modules
+
+Exports `router` with all api routes.
+"""
+
 __all__ = ["router"]
 
 from fastapi import APIRouter

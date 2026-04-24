@@ -5,6 +5,14 @@ from contextlib import asynccontextmanager
 
 DBNAME = "test.db"
 
+class AchievementEvent:
+    """
+    Emitted achievement event.
+    """
+    def __init__(self, code: str) -> None:
+        self.code = code
+
+
 
 @asynccontextmanager # Add this decorator
 async def get_db_contextmanager() -> AsyncGenerator[Connection, None]:
@@ -55,3 +63,34 @@ async def owns_sensor(user_id: int, sensor_id: int, db: Connection) -> bool:
         row = await cursor.fetchone()
     assert row is not None
     return bool(cast(int, row[0]))
+
+
+async def get_plantcount_achievements(db: Connection, user_id: int) -> list[AchievementEvent]:
+    events: list[AchievementEvent] = []
+    async with db.execute("SELECT COUNT(*) as No FROM Plants WHERE UserID = ?", (user_id, )) as cursor:
+        row = await cursor.fetchone()
+        assert row is not None
+        no_plants = row["No"]
+
+    rows = await db.execute_fetchall("""
+        SELECT a.Code as Code FROM Awards a
+        INNER JOIN Achievements ac ON a.ID = ac.AwardID
+        WHERE ac.UserID = ?""",
+        (user_id, )
+    )
+
+    assert rows is not None
+    codes = {row["Code"] for row in rows}
+
+    if "P1" not in codes and no_plants > 0:
+        await db.execute_insert("""
+            INSERT INTO Achievements (AwardID, UserID)
+            SELECT ID, ? FROM Awards WHERE Code = ?
+        """, (user_id, 'P1'))
+        events.append(AchievementEvent(code="P1"))
+
+    if "P10" not in codes and no_plants >= 10:
+        events.append(AchievementEvent(code="P10"))
+
+    await db.commit()
+    return events
