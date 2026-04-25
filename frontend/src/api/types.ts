@@ -271,7 +271,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Subscribe Achievements */
+        /**
+         * Subscribe Achievements
+         * @description Method to create a
+         */
         get: operations["subscribe_achievements_api_achievements_stream_get"];
         put?: never;
         post?: never;
@@ -298,7 +301,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/achievements/achievements": {
+    "/api/achievements": {
         parameters: {
             query?: never;
             header?: never;
@@ -309,24 +312,7 @@ export interface paths {
         put?: never;
         post?: never;
         /** Delete Achievements */
-        delete: operations["delete_achievements_api_achievements_achievements_delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Index */
-        get: operations["index__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
+        delete: operations["delete_achievements_api_achievements_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -336,7 +322,10 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /** AchievementSchema */
+        /**
+         * AchievementSchema
+         * @description Schema for achievement data from backend -> frontend.
+         */
         AchievementSchema: {
             /** Code */
             code: string;
@@ -1047,27 +1036,7 @@ export interface operations {
             };
         };
     };
-    delete_achievements_api_achievements_achievements_delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": unknown;
-                };
-            };
-        };
-    };
-    index__get: {
+    delete_achievements_api_achievements_delete: {
         parameters: {
             query?: never;
             header?: never;

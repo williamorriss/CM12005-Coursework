@@ -23,6 +23,7 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
 config = AppConfig(
     jwt_key="aeui4baibviruabirbviruiadbiburbaiurbaiuriabir213io3u4iu23o4u23oiu4",
     imgbb_key="f7616c52863e992deb9e183c38a22468",
+    allowed_origins=("http://localhost:5173",),
 )
 
 app = FastAPI(lifespan=lifespan)

@@ -60,7 +60,7 @@ async def activate_sensor(
     sensors: SensorSystem = Depends(SensorSystem),
     db: Connection = Depends(get_db),
 ) -> JSONResponse:
-    if not (await _owns_sensor(user_id, sensor_id, db)):
+    if not (await owns_sensor(user_id, sensor_id, db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sensor does not exist, or does not belong to this user",
@@ -93,7 +93,7 @@ async def deactivate_sensor(
     sensors: SensorSystem = Depends(SensorSystem),
     db: Connection = Depends(get_db),
 ) -> Response:
-    if not (await _owns_sensor(user_id, sensor_id, db)):
+    if not (await owns_sensor(user_id, sensor_id, db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sensor does not exist, or does not belong to this user",
@@ -141,7 +141,7 @@ async def del_sensor(
     user_id: int = Depends(authorize),
     db: Connection = Depends(get_db),
 ) -> Response:
-    if not (await _owns_sensor(user_id, sensor_id, db)):
+    if not (await owns_sensor(user_id, sensor_id, db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sensor does not exist, or does not belong to this user",
@@ -169,7 +169,7 @@ async def get_sensor_stream(
     sensors: SensorSystem = Depends(SensorSystem),
     db: Connection = Depends(get_db),
 ) -> AsyncIterable[SampleView]:
-    if not (await _owns_sensor(user_id, sensor_id, db)):
+    if not (await owns_sensor(user_id, sensor_id, db)):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Sensor does not exist, or does not belong to this user",
@@ -187,7 +187,7 @@ async def get_sensor_stream(
         sensors.detatch_sensor(sensor_id, out)
 
 
-async def _owns_sensor(user_id: int, sensor_id: int, db: Connection) -> bool:
+async def owns_sensor(user_id: int, sensor_id: int, db: Connection) -> bool:
     async with db.execute(
         "SELECT EXISTS(SELECT 1 FROM Sensors WHERE UserID = ? AND ID = ?)",
         (user_id, sensor_id),

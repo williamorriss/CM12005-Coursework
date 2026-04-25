@@ -1,5 +1,4 @@
-import asyncio
-from asyncio import CancelledError, sleep
+from asyncio import CancelledError, Task, create_task, sleep
 from asyncio.queues import Queue
 from datetime import datetime
 from random import randrange
@@ -27,7 +26,7 @@ def fake_sample() -> Sample:
 
 class SensorSystem:
     _instance: "SensorSystem | None" = None
-    _active: dict[int, asyncio.Task[None]]
+    _active: dict[int, Task[None]]
     _listeners: dict[int, list[Queue[Sample]]]
 
     def __new__(cls) -> "SensorSystem":
@@ -38,7 +37,7 @@ class SensorSystem:
         return cls._instance
 
     def __init__(self) -> None:
-        if hasattr(self, "_instance"):  # already initialised
+        if hasattr(self, "_active"):  # already initialised
             return
 
         self._active = {}
@@ -48,6 +47,7 @@ class SensorSystem:
         return sensor_id in self._active
 
     async def sense(self, sensor_id: int) -> None:
+        print(f"{sensor_id} started sensing")
         sensor = await SensorSystem._get_sensor(sensor_id)
         try:
             while True:
@@ -56,6 +56,7 @@ class SensorSystem:
                 await SensorSystem.write_sample(sensor, sample)
                 await sleep(10)
         except CancelledError:
+            print(f"{sensor_id} stopped")
             pass
 
     def _broadcast(self, sensor: Sensor, sample: Sample) -> None:
@@ -75,6 +76,7 @@ class SensorSystem:
 
     @staticmethod
     async def write_sample(sensor: Sensor, sample: Sample) -> None:
+        print(f"Inserting {sample} for sensor {sensor.sensor_id} ")
         async with get_db_contextmanager() as db:
             await db.execute_insert(
                 """
@@ -98,6 +100,8 @@ class SensorSystem:
 
     def attach_sensor(self, sensor_id: int) -> Queue[Sample]:
         queue: Queue[Sample] = Queue()
+        # listeners array may be empty if attatching to a sensor that has
+        # not been activated/ attached to this session
         self._listeners.setdefault(sensor_id, []).append(queue)
         return queue
 
@@ -111,7 +115,11 @@ class SensorSystem:
             raise Exception("Sensor already active")
 
         # activate sensor
-        self._active[sensor_id] = asyncio.create_task(self.sense(sensor_id))
+        self._listeners[sensor_id] = []
+        task = create_task(self.sense(sensor_id))
+        # make sure sensor errors actually appear
+        task.add_done_callback(lambda task: task.result())
+        self._active[sensor_id] = task
 
     def deactivate_sensor(self, sensor_id: int) -> None:
         if sensor_id not in self._active:
@@ -119,3 +127,5 @@ class SensorSystem:
 
         self._active[sensor_id].cancel()
         del self._active[sensor_id]
+        if len(self._listeners[sensor_id]) == 0:
+            del self._listeners[sensor_id]

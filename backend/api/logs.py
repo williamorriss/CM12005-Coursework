@@ -1,14 +1,16 @@
-from aiosqlite import Connection, Row
-from db import get_db, owns_plant, owns_sensor
-from fastapi import APIRouter, Depends
-from api.auth import authorize
-from fastapi import HTTPException
-from fastapi.requests import Request
-from pydantic import BaseModel
 from datetime import datetime
 from enum import Enum
 
+from aiosqlite import Connection, Row
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+
+from api.auth import authorize
+from api.sensors import owns_sensor
+from db import get_db, owns_plant
+
 router = APIRouter(prefix="/logging")
+
 
 class LogSchema(BaseModel):
     temperature: float | None
@@ -22,6 +24,7 @@ class LogSchema(BaseModel):
             ph=row["pH"],
             collected_timestamp=row["CollectedTimestamp"],
         )
+
 
 class LogField(str, Enum):
     temperature = "temperature"
@@ -49,17 +52,21 @@ async def get_logs(
 
     fields = ",".join(include) if include else "*"
 
-    async with db.execute_fetchall(f"""
+    async with db.execute_fetchall(
+        f"""
         SELECT {fields} FROM Logs 
         WHERE UserID = ? 
         AND (PlantID = :plant_id OR ? IS NULL)
         AND (SensorID = :sensor_id OR :sensor_id IS NULL)
         AND (created_at >= :date_from OR :date_from IS NULL)
         AND (created_at <= :date_to  OR :date_to IS NULL)
-    """, {
-        "plant_id": plant_id,
-        "sensor_id": sensor_id,
-        "date_from": date_from,
-        "date_to": date_to,
-    } ) as logs:
+    """,
+        {
+            "plant_id": plant_id,
+            "sensor_id": sensor_id,
+            "date_from": date_from,
+            "date_to": date_to,
+        },
+    ) as logs:
         return list(map(LogSchema.from_row, logs))
+

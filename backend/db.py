@@ -54,13 +54,3 @@ async def owns_plant(user_id: int, plant_id: int, db: Connection) -> bool:
         row = await cursor.fetchone()
         assert row is not None
         return bool(cast(int, row[0]))
-
-
-async def owns_sensor(user_id: int, sensor_id: int, db: Connection) -> bool:
-    async with db.execute(
-        "SELECT EXISTS(SELECT 1 FROM Sensors WHERE UserID = ? AND ID = ?)",
-        (user_id, sensor_id),
-    ) as cursor:
-        row = await cursor.fetchone()
-    assert row is not None
-    return bool(cast(int, row[0]))

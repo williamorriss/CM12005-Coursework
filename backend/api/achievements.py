@@ -1,7 +1,7 @@
-from typing import AsyncIterable, cast
+from typing import AsyncIterable
 
 from aiosqlite import Connection
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, status
 from fastapi.sse import EventSourceResponse
 from pydantic import BaseModel
 from starlette.responses import JSONResponse
@@ -32,13 +32,6 @@ class AchievementSchema(BaseModel):
             New AchievementSchema instance from event.
         """
         return AchievementSchema(code=event.code)
-
-
-def get_imgbb_api_key(request: Request) -> str:
-    """
-    Dependency injection method to get the (ImgBB)[https://imgbb.com/] api key from the current app state.
-    """
-    return cast(str, request.app.state.IMGBB_API_KEY)
 
 
 @router.get(
