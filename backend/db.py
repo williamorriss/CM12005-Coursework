@@ -7,20 +7,42 @@ from aiosqlite import Connection, Row, connect
 DBNAME = "test.db"
 
 
-@asynccontextmanager  # Add this decorator
+@asynccontextmanager
 async def get_db_contextmanager() -> AsyncGenerator[Connection, None]:
+    """
+    Gets db connection. Use `get_db` with Depends for routes etc where
+    `Depends` can be used
+
+    Note:
+        This is an async context manager so use
+        ```python
+            async with get_db_contextmanager() as db:
+             ...
+        ```
+        to use the connection
+    """
     async with connect(DBNAME) as db:
         db.row_factory = Row
         yield db
 
 
 async def get_db() -> AsyncGenerator[Connection, None]:
+    """
+    Gets db connection via dependency injection
+
+    Note:
+        Use this with db: ... = Depends(get_db)
+        Otherwise `get_db_contextmanager`
+    """
     async with connect(DBNAME) as db:
         db.row_factory = Row
         yield db
 
 
 async def init_db() -> None:
+    """
+    Method to initialise database (local .db file)
+    """
     async with connect(DBNAME) as db:
         await db.execute(
             "PRAGMA journal_mode=WAL"
@@ -31,12 +53,12 @@ async def init_db() -> None:
             schema_sql = schema_file.read()
             await db.executescript(schema_sql)
 
-        await load_awards(db)
+        await _load_awards(db)
         await db.commit()
         print("Schema applied")
 
 
-async def load_awards(db: Connection) -> None:
+async def _load_awards(db: Connection) -> None:
     with open("sql/awards.csv") as awards_file:
         awards_reader = csv.reader(awards_file)
         await db.execute("DELETE FROM Awards WHERE true")

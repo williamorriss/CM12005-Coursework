@@ -6,16 +6,18 @@ from aiosqlite import Connection
 
 from db import get_db_contextmanager
 
-"""
-TEST PLANT CODES:
-P1 : 1 plant
-P10 : 10 plants
-"""
-
 
 class AchievementCode(str, Enum):
-    P1 = "P1"
-    P10 = "P10"
+    """
+    Enum of all recognised achievements
+
+    Note:
+        Should be fine to define here (for now) but can
+        be relocated/ extracted from db if this becomes too unwieldly
+    """
+
+    P1 = "P1"  # 1 Plant
+    P10 = "P10"  # 10 Plants
 
 
 class AchievementEvent(NamedTuple):
@@ -28,18 +30,12 @@ class AchievementEvent(NamedTuple):
 
 class AchievementSystem:
     """
-    A singleton class that manages achievements.
-    General Usage:
-        1) An api client sends a GET request to api/achievements/stream
-        2) A listener queue is created
-        3) In routes etc when the conditons for an achievement are met, the `send` method (preferably
-           as a background task) is used to push an AchievementEvent to all of the relevant listener queues
-        4) This triggers a server side event in .../stream, sending an AchievementSchema to the client
-        5) When the connection is closed, the UUID handle is used to remove the listener queue from the system
+    A singleton class to manage achievements.
     """
 
-    # used so __init__ is not called multiple times
     _instance: "AchievementSystem | None" = None
+
+    # maps user_id -> list of queues listening for that user's achievements
     _listeners: dict[int, list[Queue[AchievementEvent]]]
 
     def __new__(cls) -> "AchievementSystem":
@@ -57,13 +53,8 @@ class AchievementSystem:
 
     def create_listener(self, user_id: int) -> Queue[AchievementEvent]:
         """
-        Creates a listener queue and associated handle.
-        Args:
-            user_id: int - id of the client.
-
-        Returns:
-            Queue[AchievementEvent]] - listener queue.
-
+        Creates a async `AchievementEvent` queue to which achievements for this user
+        will be pushed to.
         """
 
         queue: Queue[AchievementEvent] = Queue()
@@ -73,13 +64,10 @@ class AchievementSystem:
 
     def remove_listener(self, user_id: int, queue: Queue[AchievementEvent]) -> None:
         """
-        Removes the listener queue with the given handle for a given user.
+        Removes this queue (by reference) from the list of this user's listeners
 
-        Args:
-            user_id: int - id of the client
-            queue_id: UUID - handle of the listener queue
-
-        Raises exception if queue is not a listener for this user
+        Note:
+            Raises exception if queue is not a listener for this user
         """
         if user_id not in self._listeners:
             raise Exception("This queue is not registered under this user (if at all)")
@@ -90,8 +78,10 @@ class AchievementSystem:
 
     def send(self, user_id: int, event: AchievementEvent) -> None:
         """
-        Sends an AchievementEvent to all listener queues associated with a user
-        (all in the case of multiple connections per user)
+        Sends an AchievementEvent to all listener queues associated with this user
+
+        Note:
+            use this to broadcast when an achievement is acomplished in routes etc....
         """
 
         for queue in self._listeners.get(user_id, []):
@@ -102,6 +92,13 @@ class AchievementSystem:
 
 
 async def plant_achievements(user_id: int) -> None:
+    """
+    Convenience method to calculate whether this user has achieved any new
+    plant achievements
+
+    Note:
+        Currently only checks plant count (e.g 1 plant etc) but can be expanded
+    """
     achievements = AchievementSystem()
     async with get_db_contextmanager() as db:
         for event in await _plantcount_achievements(db, user_id):
