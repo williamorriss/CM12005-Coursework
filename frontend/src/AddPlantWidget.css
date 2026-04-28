@@ -1,0 +1,52 @@
+.upload-plant-widget {
+    display: block;
+    background-color: #e1ecdc;
+    border-radius: 40px;
+    border-color: black;
+    border-width: 5px;
+    border-style: solid;
+    max-width: 50%;
+}
+
+.flex-right {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 4px;
+}
+
+.flex-down {
+    display: flex;
+    flex-direction: column;
+}
+
+.upload-plant-widget-section {
+    color: black;
+    background-color: #dcdedc;
+    border-radius: 20px;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    margin-bottom: 10px;
+    margin-top: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    text-align: left;
+}
+
+.upload-plant-widget-section > input {
+    background: none;
+    border: none;
+    width: 100%;
+    font-size: 16px;
+    margin-bottom: -4px;
+    color: black;
+}
+
+h2 {
+    color: black;
+    margin: 0 0 0 0;
+}
+

@@ -5,6 +5,7 @@ import Plants from "./PlantBar"
 import {type NavigateFunction, useNavigate} from 'react-router-dom'
 import { api } from "../../api/api";
 import type { components } from "../../api/types"
+import AddPlantPopup from "../../AddPlantPopup";
 
 
 
@@ -53,6 +54,8 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
     useEffect(() => {fetchPlants().then()}, []);
 
 
+    const [popUpOpen, setPopUpOpen] = useState(false);
+
     return (
         <>
             {fetchPlants}
@@ -62,8 +65,11 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <p>{`Hello ${session?.username}`}</p>
             {/* id = {session?.user_id} */}
 
-            <button onClick={deleteUser} id="DeleteUser">Delete</button>
-            <AddPlantForm addPlant={addPlant} />
+
+            <button onClick={() => setPopUpOpen(true)}>Add Plant</button>
+            <AddPlantPopup isOpen={popUpOpen} onRequestClose={() => setPopUpOpen(false)} />
+
+            {/* <AddPlantForm addPlant={addPlant} /> */}
 
             <Plants plants={plants} deletePlant={deletePlant} navigate={navigate} />
 
