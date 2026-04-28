@@ -49,10 +49,6 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 
-# Logs
-logs
-*.log
-
 # Optional npm cache directory
 .npm
 
@@ -174,7 +170,7 @@ MANIFEST
 *.manifest
 *.spec
 
-# Installer plants.logs
+# Installer plants.logging
 pip-log.txt
 pip-delete-this-directory.txt
 

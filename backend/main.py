@@ -1,55 +1,43 @@
-import os
-from typing import Any, AsyncGenerator
-from fastapi.responses import FileResponse
 from contextlib import asynccontextmanager
+from typing import Any, AsyncGenerator
+
+from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from api import router
+from config import AppConfig
 from db import init_db
 
-from fastapi import FastAPI
-from auth import router as auth_router
-from sensors import router as sensors_router
-from plants import router as plant_router
-from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 load_dotenv()
 
-DEV_SERVER = "http://localhost:5173"
-ORIGIN = "http://localhost:8000"
-CAS_ORIGIN = "https://auth.bath.ac.uk"
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncGenerator[None, Any]:
     await init_db()
     yield
 
+
+# signing_key = os.getenv("SIGNING_KEY")
+# imgbb_key = os.getenv("IMGBB_KEY")
+config = AppConfig(
+    jwt_key="aeui4baibviruabirbviruiadbiburbaiurbaiuriabir213io3u4iu23o4u23oiu4",
+    imgbb_key="f7616c52863e992deb9e183c38a22468",
+    allowed_origins=("http://localhost:5173",),
+)
+
 app = FastAPI(lifespan=lifespan)
+
+app.include_router(router)
+
+# technically not needed
 # noinspection PyTypeChecker
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[DEV_SERVER],
+    allow_origins=list(config.allowed_origins),
     allow_credentials=True,
     allow_headers=["AUTHORIZATION", "CONTENT_TYPE", "COOKIE", "ACCEPT"],
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
 )
-#
-# signing_key = os.getenv("SIGNING_KEY")
-# imgbb_key = os.getenv("IMGBB_KEY")
-# assert signing_key and imgbb_key
-signing_key = "aeui4baibviruabirbviruiadbiburbaiurbaiuriabir213io3u4iu23o4u23oiu4"
-# this is on a burner account but for future reference I can see *all* uploaded files ;-;
-imgbb_key = "f7616c52863e992deb9e183c38a22468"
 
-# this is kind of terrible and should be made into a config class so they
-# actually have types
-app.state.ORIGIN = ORIGIN
-app.state.CAS_ORIGIN = CAS_ORIGIN
-app.state.ALLOWED_ORIGINS = [app.state.ORIGIN, DEV_SERVER]
-app.state.JWT_SIGNING_KEY = signing_key
-app.state.IMGBB_API_KEY = imgbb_key
-app.state.sensors = {}
-app.include_router(auth_router, prefix="/api")
-app.include_router(sensors_router, prefix="/api")
-app.include_router(plant_router, prefix="/api")
-
-@app.get("/")
-async def index() -> FileResponse:
-    return FileResponse("index.html")
+app.state.config = config

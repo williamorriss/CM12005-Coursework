@@ -106,6 +106,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/logging/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Logs */
+        get: operations["get_logs_api_logging__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plants/{plant_id}/notes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Notes */
+        get: operations["get_notes_api_plants__plant_id__notes_get"];
+        put?: never;
+        /** Post Note */
+        post: operations["post_note_api_plants__plant_id__notes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plants/{plant_id}/notes/{note_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Note */
+        delete: operations["delete_note_api_plants__plant_id__notes__note_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plants */
+        get: operations["get_plants_api_plants_get"];
+        put?: never;
+        /** Add Plant */
+        post: operations["add_plant_api_plants_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/plants/{plant_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Plant */
+        get: operations["get_plant_api_plants__plant_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Plant */
+        delete: operations["delete_plant_api_plants__plant_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sensors": {
         parameters: {
             query?: never;
@@ -176,61 +264,44 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/plants": {
+    "/api/achievements/stream": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Plants */
-        get: operations["get_plants_api_plants_get"];
-        put?: never;
-        /** Add Plant */
-        post: operations["add_plant_api_plants_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/plants/{plant_id}": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Plants */
-        get: operations["get_plants_api_plants__plant_id__get"];
+        /**
+         * Subscribe Achievements
+         * @description Method to create a
+         */
+        get: operations["subscribe_achievements_api_achievements_stream_get"];
         put?: never;
         post?: never;
-        /** Delete Plant */
-        delete: operations["delete_plant_api_plants__plant_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/plants/{plant_id}/notes": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Get Notes */
-        get: operations["get_notes_api_plants__plant_id__notes_get"];
-        put?: never;
-        /** Post Note */
-        post: operations["post_note_api_plants__plant_id__notes_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/api/plants/{plant_id}/notes/{note_id}": {
+    "/api/achievements/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test */
+        post: operations["test_api_achievements_test_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/achievements": {
         parameters: {
             query?: never;
             header?: never;
@@ -240,25 +311,8 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Note */
-        delete: operations["delete_note_api_plants__plant_id__notes__note_id__delete"];
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Index */
-        get: operations["index__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
+        /** Delete Achievements */
+        delete: operations["delete_achievements_api_achievements_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -268,6 +322,14 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AchievementSchema
+         * @description Schema for achievement data from backend -> frontend.
+         */
+        AchievementSchema: {
+            /** Code */
+            code: string;
+        };
         /** Body_add_plant_api_plants_post */
         Body_add_plant_api_plants_post: {
             /** Name */
@@ -294,8 +356,22 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /** NoteView */
-        NoteView: {
+        /**
+         * LogField
+         * @enum {string}
+         */
+        LogField: "temperature" | "ph" | "inserted_timestamp";
+        /** LogSchema */
+        LogSchema: {
+            /** Temperature */
+            temperature: number | null;
+            /** Ph */
+            ph: number | null;
+            /** Collected Timestamp */
+            collected_timestamp: string | null;
+        };
+        /** NoteSchema */
+        NoteSchema: {
             /** Id */
             id: number;
             /** Plant Id */
@@ -310,8 +386,8 @@ export interface components {
              */
             timestamp: string;
         };
-        /** PlantView */
-        PlantView: {
+        /** PlantSchema */
+        PlantSchema: {
             /** Id */
             id: number;
             /** Name */
@@ -319,8 +395,8 @@ export interface components {
             /** Image Url */
             image_url: string | null;
         };
-        /** SensorView */
-        SensorView: {
+        /** SensorSchema */
+        SensorSchema: {
             /** Sensor Id */
             sensor_id: number;
             /** Plant Id */
@@ -328,12 +404,17 @@ export interface components {
             /** Name */
             name: string;
         };
-        /** UserSession */
-        UserSession: {
-            /** User Id */
-            user_id: number;
+        /** UserSchema */
+        UserSchema: {
             /** Username */
             username: string;
+            /**
+             * Date Joined
+             * Format: date-time
+             */
+            date_joined: string;
+            /** Profile Picture */
+            profile_picture: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -450,7 +531,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["UserSession"];
+                    "application/json": components["schemas"]["UserSchema"];
                 };
             };
         };
@@ -491,6 +572,253 @@ export interface operations {
             };
         };
     };
+    get_logs_api_logging__get: {
+        parameters: {
+            query?: {
+                plant_id?: number | null;
+                sensor_id?: number | null;
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["LogField"][] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LogSchema"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notes_api_plants__plant_id__notes_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteSchema"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_note_api_plants__plant_id__notes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/x-www-form-urlencoded": components["schemas"]["Body_post_note_api_plants__plant_id__notes_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NoteSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_note_api_plants__plant_id__notes__note_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+                note_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plants_api_plants_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantSchema"][];
+                };
+            };
+        };
+    };
+    add_plant_api_plants_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_add_plant_api_plants_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_plant_api_plants__plant_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlantSchema"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_plant_api_plants__plant_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                plant_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_user_sensors_api_sensors_get: {
         parameters: {
             query?: never;
@@ -506,7 +834,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SensorView"][];
+                    "application/json": components["schemas"]["SensorSchema"][];
                 };
             };
         };
@@ -530,7 +858,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["SensorView"];
+                    "application/json": components["schemas"]["SensorSchema"];
                 };
             };
             /** @description Validation Error */
@@ -668,7 +996,27 @@ export interface operations {
             };
         };
     };
-    get_plants_api_plants_get: {
+    subscribe_achievements_api_achievements_stream_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE for new achievements */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": components["schemas"]["AchievementSchema"];
+                };
+            };
+        };
+    };
+    test_api_achievements_test_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -683,201 +1031,12 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PlantView"][];
+                    "application/json": unknown;
                 };
             };
         };
     };
-    add_plant_api_plants_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "multipart/form-data": components["schemas"]["Body_add_plant_api_plants_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlantView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_plants_api_plants__plant_id__get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                plant_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PlantView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_plant_api_plants__plant_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                plant_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_notes_api_plants__plant_id__notes_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                plant_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NoteView"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    post_note_api_plants__plant_id__notes_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                plant_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/x-www-form-urlencoded": components["schemas"]["Body_post_note_api_plants__plant_id__notes_post"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["NoteView"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_note_api_plants__plant_id__notes__note_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                plant_id: number;
-                note_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    index__get: {
+    delete_achievements_api_achievements_delete: {
         parameters: {
             query?: never;
             header?: never;
