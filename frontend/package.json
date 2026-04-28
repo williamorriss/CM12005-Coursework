@@ -4,18 +4,20 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "gen:api": "openapi-typescript http://localhost:8000/openapi.json -o src/api/types.ts",
-    "dev": "npm run gen:api && vite",
+    "predev": "openapi-typescript http://localhost:8000/openapi.json -o src/api/types.ts",
+    "dev": "npx vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview"
   },
   "dependencies": {
+    "date-fns": "^4.1.0",
     "openapi-fetch": "^0.17.0",
     "openapi-typescript": "^7.13.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
-    "react-router-dom": "^7.13.2"
+    "react-router-dom": "^7.13.2",
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

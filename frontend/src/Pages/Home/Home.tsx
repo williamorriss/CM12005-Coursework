@@ -3,13 +3,20 @@ import {type JSX, useEffect, useState } from "react";
 import "./Home.css";
 import Plants from "./PlantBar"
 import {type NavigateFunction, useNavigate} from 'react-router-dom'
-import { api } from "../../api/api";
-import type { components } from "../../api/types"
-import AddPlantPopup from "../../AddPlantPopup";
+import { api, type Achievement, type Plant } from "../../api";
+import { useAchievementEffect, deleteAchievements } from "../../Achievements";
 
-type PlantView = components["schemas"]["PlantView"];
+// const testSubscribe = async () => {
+//     const {error} = await api.POST("/api/achievements/test", {} as any);
+//     if (error) throw error;
+// }
 
-function Home() : JSX.Element {
+
+export default function Home() : JSX.Element {
+    useAchievementEffect((achievement: Achievement) => {
+        alert(`You got achievment code: ${achievement.code} :>`)
+    })
+
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
@@ -34,18 +41,18 @@ type LoginProps = {
 }
 
 function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.Element {
-    const [plants, setPlants] = useState<PlantView[]>([]);
+    const [plants, setPlants] = useState<Plant[]>([]);
     const deletePlant = (id: number) => {
         setPlants(plants.filter(plant => plant.id !== id));
     }
 
-    const addPlant = (plant: PlantView) => {
+    const addPlant = (plant: Plant) => {
         setPlants([...plants, plant]);
     }
 
     const fetchPlants = async () => {
         const { data, error } = await api.GET("/api/plants", {});
-        if (error) alert(error);
+        if (error) console.log(error);
         if (data) setPlants(data);
     };
 
@@ -59,6 +66,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             {fetchPlants}
 
             <button onClick={logout}>logout</button>
+            <button onClick={deleteAchievements}> Reset Achievements </button>
             <p>{`Hello ${session?.username}`}</p>
             {/* id = {session?.user_id} */}
 
@@ -88,7 +96,7 @@ function LoggedOut({login}: LogoutProps) : JSX.Element {
 }
 
 
-function AddPlantForm({ addPlant } : { addPlant: ( plants: PlantView) => void}): JSX.Element {
+function AddPlantForm({ addPlant } : { addPlant: ( plants: Plant) => void}): JSX.Element {
     const handleSubmit = async (form: FormData) => {
         const pictureFile = form.get("picture")! as File;
         const formData = new FormData();
@@ -107,7 +115,7 @@ function AddPlantForm({ addPlant } : { addPlant: ( plants: PlantView) => void}):
             alert(error);
         }
 
-        addPlant(data as PlantView);
+        addPlant(data as Plant);
     };
 
     return (
@@ -119,5 +127,3 @@ function AddPlantForm({ addPlant } : { addPlant: ( plants: PlantView) => void}):
         </form>
     );
 }
-
-export default Home;

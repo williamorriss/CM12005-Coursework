@@ -1,0 +1,24 @@
+.background-div {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    background-color: rgb(29, 100, 48);
+    width: 100%;
+    padding-bottom: 20px;
+    border-radius: 12px;
+}
+
+.plant-name {
+  margin: 20px;
+  color: white;
+  font-weight: bold;
+  font-size: 50px;
+}
+
+.plant-image {
+    width: 90%;           
+    height: auto;
+    display: block;
+    margin: 0;
+    padding: 0; 
+}
