@@ -3,20 +3,14 @@ import {type JSX, useEffect, useState } from "react";
 import "./Home.css";
 import Plants from "./PlantBar"
 import {type NavigateFunction, useNavigate} from 'react-router-dom'
-import { api, type Achievement, type Plant } from "../../api";
-import { useAchievementEffect, deleteAchievements } from "../../Achievements";
-
-// const testSubscribe = async () => {
-//     const {error} = await api.POST("/api/achievements/test", {} as any);
-//     if (error) throw error;
-// }
+import { api } from "../../api/api";
+import type { components } from "../../api/types"
 
 
-export default function Home() : JSX.Element {
-    useAchievementEffect((achievement: Achievement) => {
-        alert(`You got achievment code: ${achievement.code} :>`)
-    })
 
+type PlantView = components["schemas"]["PlantView"];
+
+function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
@@ -74,6 +68,11 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <Plants plants={plants} deletePlant={deletePlant} navigate={navigate} />
 
             <button onClick={() => navigate("/dev")}> dev </button>
+
+            {/* <button onClick={() => navigate("/dev")}>UserPage test</button> */}
+            <button onClick={() => navigate("/userPage")}>userPage </button>
+
+            {/* <UserPage session={session} deleteUser={deleteUser} /> */}
         </>
     )
 }
