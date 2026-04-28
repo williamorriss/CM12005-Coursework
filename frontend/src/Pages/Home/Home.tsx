@@ -6,12 +6,13 @@ import {type NavigateFunction, useNavigate} from 'react-router-dom'
 import { api } from "../../api/api";
 import type { components } from "../../api/types"
 import AddPlantPopup from "../../AddPlantPopup";
+import type { Plant } from "src/api";
 
 
 
 type PlantView = components["schemas"]["PlantView"];
 
-function Home() : JSX.Element {
+export default function Home() : JSX.Element {
     const { session, isLoggedIn, logout, deleteUser, login, getSession } = useAuth();
     const navigate = useNavigate();
 
@@ -61,7 +62,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             {fetchPlants}
 
             <button onClick={logout}>logout</button>
-            <button onClick={deleteAchievements}> Reset Achievements </button>
+            {/* <button onClick={deleteAchievements}> Reset Achievements </button> */}
             <p>{`Hello ${session?.username}`}</p>
             {/* id = {session?.user_id} */}
 

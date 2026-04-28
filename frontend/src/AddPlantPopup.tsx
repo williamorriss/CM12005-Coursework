@@ -2,7 +2,6 @@ import { useState, type ChangeEventHandler } from "react";
 import FileInputBox from "./FileInputBox";
 import Popup from "./Popup.tsx";
 import { api } from "./api/api";
-import "./Pages/PlantPage/PlantPage.css";
 import "./AddPlantWidget.css";
 
 export default function AddPlantPopup({isOpen, onRequestClose} : {isOpen: boolean, onRequestClose: () => void}) {
