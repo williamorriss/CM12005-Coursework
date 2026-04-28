@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEventHandler, type DragEventHandler, type ReactEventHandler } from "react";
-import "./AddPlantWidget.css"
+import "./FileInputBox.css"
 
 const handleDragOver: ReactEventHandler<HTMLDivElement> = (e) => e.preventDefault();
 

@@ -1,11 +1,11 @@
-import Popup from "../../Popup.tsx";
-import { api } from "../../api/api";
-import "../PlantPage/PlantPage.css";
-import FileInputBox from "./FileInputBox";
 import { useState, type ChangeEventHandler } from "react";
+import FileInputBox from "./FileInputBox";
+import Popup from "./Popup.tsx";
+import { api } from "./api/api";
+import "./Pages/PlantPage/PlantPage.css";
+import "./AddPlantWidget.css";
 
-export default function UploadPlantPage(_: {}) {
-    const [popUpOpen, setPopUpOpen] = useState(false);
+export default function AddPlantPopup({isOpen, onRequestClose} : {isOpen: boolean, onRequestClose: () => void}) {
     const [file, setFile] = useState<File | null>(null);
     const [name, setName] = useState("")
 
@@ -21,11 +21,13 @@ export default function UploadPlantPage(_: {}) {
 
     const onTextboxChange: ChangeEventHandler<HTMLInputElement> = (e) => {setName(e.target.value)};
 
+    const shouldDisable = (file == null) || (name == null)
+
     return (
-        <>
-            <button onClick={() => setPopUpOpen(true)}>Open popup test</button>
-            <Popup isOpen={popUpOpen} onRequestClose={() => setPopUpOpen(false)}>
-                <h2>Add Plant</h2>
+        <Popup isOpen={isOpen} onRequestClose={onRequestClose}>
+            <h2>Add Plant</h2>
+
+            <form>
                 <label className="upload-plant-widget-section flex-right">
                     Name:  
                     <input type="text" value={name} onChange={onTextboxChange} placeholder="Plant Name"/>
@@ -35,10 +37,8 @@ export default function UploadPlantPage(_: {}) {
                     Image File: {file ? file.name : "None"}
                     <FileInputBox onFileSelected={setFile} file={file}/>
                 </label>
-                <button type="submit" onClick={uploadPlant} disabled={file == null}>Add Plant</button>
-                {/* <div className="upload-plant-widget"> */}
-                {/* </div> */}
-            </Popup>
-        </>
+                <button type="submit" onClick={uploadPlant} disabled={shouldDisable}>Add Plant</button>
+            </form>
+        </Popup>
     )
 }
