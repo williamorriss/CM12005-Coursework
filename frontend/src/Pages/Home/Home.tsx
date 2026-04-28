@@ -6,7 +6,6 @@ import {type NavigateFunction, useNavigate} from 'react-router-dom'
 import { api } from "../../api/api";
 import type { components } from "../../api/types"
 
-import UserPage from "../UserPage/UserPage"
 
 
 type PlantView = components["schemas"]["PlantView"];
@@ -70,7 +69,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             <button onClick={() => navigate("/dev")}> dev </button>
 
             {/* <button onClick={() => navigate("/dev")}>UserPage test</button> */}
-            <button onClick={() => navigate("userPage")}>userPage </button>
+            <button onClick={() => navigate("/userPage")}>userPage </button>
 
             {/* <UserPage session={session} deleteUser={deleteUser} /> */}
         </>
