@@ -11,11 +11,13 @@ export default function AddPlantPopup({isOpen, onRequestClose} : {isOpen: boolea
     const uploadPlant = async () => {
         const formData = new FormData();
         formData.append("name", name);
-        formData.append("picture", file!);
+        formData.append("picture", file!, file!.name);
 
-        console.log(await api.POST("/api/plants", {
+        await api.POST("/api/plants", {
             body: formData as any
-        }));
+        });
+
+        window.location.reload();
     }
 
     const onTextboxChange: ChangeEventHandler<HTMLInputElement> = (e) => {setName(e.target.value)};
@@ -26,7 +28,7 @@ export default function AddPlantPopup({isOpen, onRequestClose} : {isOpen: boolea
         <Popup isOpen={isOpen} onRequestClose={onRequestClose}>
             <h2>Add Plant</h2>
 
-            <form>
+            <form action={uploadPlant} >
                 <label className="upload-plant-widget-section flex-right">
                     Name:  
                     <input type="text" value={name} onChange={onTextboxChange} placeholder="Plant Name"/>
@@ -36,7 +38,7 @@ export default function AddPlantPopup({isOpen, onRequestClose} : {isOpen: boolea
                     Image File: {file ? file.name : "None"}
                     <FileInputBox onFileSelected={setFile} file={file}/>
                 </label>
-                <button type="submit" onClick={uploadPlant} disabled={shouldDisable}>Add Plant</button>
+                <button type="submit" disabled={shouldDisable}>Add Plant</button>
             </form>
         </Popup>
     )
