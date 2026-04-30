@@ -8,7 +8,7 @@ from typing import cast
 import httpx
 import jwt
 from aiosqlite import Connection, OperationalError
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse, Response
 from pydantic import BaseModel
@@ -92,31 +92,24 @@ async def cas_callback(
     except httpx.InvalidURL:
         raise HTTPException(status_code=400, detail="Redirect is not a valid URL")
 
-    try:
-        username = await get_username(
-            redirect64, ticket, config.origin, config.cas_origin
+    async with httpx.AsyncClient(base_url=config.cas_origin) as cas_client:
+        service = f"{config.origin}/api/auth/cas/{redirect64}"
+        cas_response = await cas_client.get(
+            f"/serviceValidate?service={service}&ticket={ticket}"
         )
+    try:
+        username = parse_cas_response(cas_response.text)
+    except ValueError as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP, detail="Bad CAS response")
+
+    try:
         if (user_id := await get_user_id(db, username)) is None:
             if (user_id := await create_user(db, username)) is None:
                 raise HTTPException(status_code=500, detail="Failed to create new user")
 
-        expires = datetime.now(timezone.utc) + timedelta(hours=1)
-        token = jwt.encode(
-            {"user_id": user_id, "exp": int(expires.timestamp())},
-            key=config.jwt_key,
-            algorithm="HS256",
-        )
-
         response = RedirectResponse(url=str(redirect), status_code=302)
-        response.set_cookie(
-            key="auth-token",
-            value=token,
-            httponly=True,
-            secure=False,  # set true if deploying
-            samesite="lax",
-            expires=expires,
-        )
-
+        set_auth_cookie(config.jwt_key, user_id, response)
         return response
 
     except HTTPException as http_err:
@@ -126,6 +119,24 @@ async def cas_callback(
     except Exception as err:
         print(err)
         raise HTTPException(status_code=500, detail="Server error")
+
+
+def set_auth_cookie(key: str, user_id: int, response: Response) -> None:
+    expires = datetime.now(timezone.utc) + timedelta(hours=1)
+    token = jwt.encode(
+        {"user_id": user_id, "exp": int(expires.timestamp())},
+        key=key,
+        algorithm="HS256",
+    )
+
+    response.set_cookie(
+        key="auth-token",
+        value=token,
+        httponly=True,
+        secure=False,  # set true if deploying
+        samesite="lax",
+        expires=expires,
+    )
 
 
 @router.get("/session", response_model=UserSchema)
@@ -154,22 +165,8 @@ async def retrieve_session(
 async def refresh_token(
     config: AppConfig = Depends(get_config), user_id: int = Depends(authorize)
 ) -> Response:
-    expires = datetime.now(timezone.utc) + timedelta(hours=1)
-    token = jwt.encode(
-        {"user_id": user_id, "exp": int(expires.timestamp())},
-        key=config.jwt_key,
-        algorithm="HS256",
-    )
-
     response = Response(status_code=200)
-    response.set_cookie(
-        key="auth-token",
-        value=token,
-        httponly=True,
-        secure=False,  # set true if deploying
-        samesite="lax",
-        expires=expires,
-    )
+    set_auth_cookie(config.jwt_key, user_id, response)
 
     return response
 
@@ -194,33 +191,22 @@ async def delete_user(
         raise HTTPException(status_code=500, detail="Server error")
 
 
-async def get_username(
-    redirect64: str, ticket: str, origin: str, cas_origin: str
-) -> str:
-    async with httpx.AsyncClient(base_url=cas_origin) as cas_client:
-        service = f"{origin}/api/auth/cas/{redirect64}"
-        response = await cas_client.get(
-            f"/serviceValidate?service={service}&ticket={ticket}"
-        )
-
+def parse_cas_response(message: str) -> str:
     namespaces = {"cas": "http://www.yale.edu/tp/cas"}
     try:
-        root = ET.fromstring(response.text)
+        root = ET.fromstring(message)
     except ET.ParseError:
-        raise HTTPException(status_code=502, detail="Bad CAS response")
+        raise ValueError("Bad CAS response")
 
     if (failure := root.find("cas:authenticationFailure", namespaces)) is not None:
         error = failure.findtext("cas:message", namespaces=namespaces)
-        print(error)
-        raise HTTPException(status_code=401, detail="Failed to authenticate")
+        raise ValueError(f"CAS error : {error}")
 
     if (success := root.find("cas:authenticationSuccess", namespaces)) is None:
-        raise HTTPException(status_code=500, detail="No CAS response")
+        raise ValueError("No CAS response")
 
     if (user := success.findtext("cas:user", namespaces=namespaces)) is None:
-        raise HTTPException(
-            status_code=500, detail="Server error whilst parsing CAS response"
-        )
+        raise ValueError("User not found in successful response")
 
     return user
 

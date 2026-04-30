@@ -44,18 +44,22 @@ async def init_db() -> None:
     Method to initialise database (local .db file)
     """
     async with connect(DBNAME) as db:
-        await db.execute(
-            "PRAGMA journal_mode=WAL"
-        )  # Write Ahead Log for concurrent read/ writes
-        await db.execute("PRAGMA busy_timeout=1000")
-        await db.execute("PRAGMA synchronous=NORMAL")
-        with open("sql/schema.sql", "r") as schema_file:
-            schema_sql = schema_file.read()
-            await db.executescript(schema_sql)
+        await init_connection(db)
 
-        await _load_awards(db)
-        await db.commit()
-        print("Schema applied")
+
+async def init_connection(db: Connection) -> None:
+    await db.execute(
+        "PRAGMA journal_mode=WAL"
+    )  # Write Ahead Log for concurrent read/ writes
+    await db.execute("PRAGMA busy_timeout=1000")
+    await db.execute("PRAGMA synchronous=NORMAL")
+    with open("sql/schema.sql", "r") as schema_file:
+        schema_sql = schema_file.read()
+        await db.executescript(schema_sql)
+
+    await _load_awards(db)
+    await db.commit()
+    print("Schema applied")
 
 
 async def _load_awards(db: Connection) -> None:

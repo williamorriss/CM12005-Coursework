@@ -273,7 +273,7 @@ export interface paths {
         };
         /**
          * Subscribe Achievements
-         * @description Method to create a
+         * @description Get achievement stream for user
          */
         get: operations["subscribe_achievements_api_achievements_stream_get"];
         put?: never;
@@ -311,7 +311,10 @@ export interface paths {
         get?: never;
         put?: never;
         post?: never;
-        /** Delete Achievements */
+        /**
+         * Delete Achievements
+         * @description Delete all achievements for a user
+         */
         delete: operations["delete_achievements_api_achievements_delete"];
         options?: never;
         head?: never;

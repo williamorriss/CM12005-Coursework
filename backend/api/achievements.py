@@ -43,14 +43,12 @@ class AchievementSchema(BaseModel):
             "description": "SSE for new achievements",
         }
     },
+    description="Get achievement stream for user",
 )
 async def subscribe_achievements(
     user_id: int = Depends(authorize),
     achievements: AchievementSystem = Depends(AchievementSystem),
 ) -> AsyncIterable[AchievementSchema]:
-    """
-    Method to create a
-    """
     queue = achievements.create_listener(user_id)
     try:
         while True:
@@ -70,7 +68,7 @@ async def test(
     return JSONResponse(content="posted", status_code=status.HTTP_200_OK)
 
 
-@router.delete("")
+@router.delete("", description="Delete all achievements for a user")
 async def delete_achievements(
     user_id: int = Depends(authorize), db: Connection = Depends(get_db)
 ) -> JSONResponse:

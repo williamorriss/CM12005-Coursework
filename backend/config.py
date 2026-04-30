@@ -1,11 +1,13 @@
-from typing import Final, NamedTuple, cast
+from dataclasses import dataclass
+from typing import Final, cast
 
 from fastapi.requests import Request
 
 ORIGIN: Final[str] = "http://localhost:5173"
 
 
-class AppConfig(NamedTuple):
+@dataclass(frozen=True)
+class AppConfig:
     """
     Immutable structure to hold the current configuration of the server
     """
@@ -18,7 +20,7 @@ class AppConfig(NamedTuple):
 
 
 # extractors
-def get_config(request: Request) -> "AppConfig":
+def get_config(request: Request) -> AppConfig:
     """
     Extractor to get the current configuration of the server
 
