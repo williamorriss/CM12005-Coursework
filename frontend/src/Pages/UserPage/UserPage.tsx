@@ -1,11 +1,9 @@
-import {useParams} from "react-router-dom";
-import type { components } from "../../api/types";
-import { type JSX, useState } from "react";
-import { api } from "../../api/api";
-import { useAuth, type User } from "../../AuthContext";
-import {type NavigateFunction, useNavigate} from 'react-router-dom'
 
-import session from "../Home/Home.tsx"
+import { type JSX, useState } from "react";
+
+import { useNavigate} from 'react-router-dom'
+
+
 import deleteUser from "../Home/Home.tsx"
 import "./UserPage.css"
 
@@ -44,8 +42,6 @@ function UserPage () : JSX.Element {
             </p>
             
 
-
-            <textarea name="username" placeholder="PlaceHolder" />
             <br/>
 
             <button onClick={() => navigate("/")}>Home Page </button>
