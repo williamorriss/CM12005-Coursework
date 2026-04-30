@@ -2,23 +2,17 @@ from dataclasses import dataclass
 from io import BytesIO
 
 import httpx
-import numpy as np
 import pytest
 from aiosqlite import Connection
 from fastapi import status
 from fastapi.testclient import TestClient
-from numpy.typing import NDArray
 from PIL import Image
 
 from api.plants import PlantSchema
 from db import delete_image
 from main import app
+from tests import rms_img_diff
 from tests.conftest import mangle_cookie
-
-
-def rms_diff(a: NDArray[np.int8], b: NDArray[np.int8]) -> float:
-    assert a.shape == b.shape
-    return float(np.sqrt(np.mean((a - b) ** 2)))
 
 
 @dataclass
@@ -111,7 +105,7 @@ async def test_make_plant_with_image(
             response = await httpx_client.get(image_url)
             uploaded_image = Image.open(BytesIO(response.content))
             stored_image = Image.open(plant.image_file)
-            diff = rms_diff(np.array(uploaded_image), np.array(stored_image))
+            diff = rms_img_diff(uploaded_image, stored_image)
             assert diff < 10.0
     finally:
         if response_plant is not None:

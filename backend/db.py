@@ -100,7 +100,7 @@ async def delete_image(plant_id: int, db: Connection) -> None:
         raise HTTPException(status_code=500, detail="Image resource has no delete URL")
 
     async with httpx.AsyncClient() as client:
-        response = await client.delete(delete_url)
+        response = await client.get(delete_url)
         if response.is_error:
             raise HTTPException(status_code=500, detail="Could not delete image")
 

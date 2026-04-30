@@ -7,6 +7,7 @@ from aiosqlite import Connection, Row, connect
 from fastapi.responses import Response
 
 from api.auth import set_auth_cookie
+from config import AppConfig
 from db import get_db, init_connection
 from main import app
 
@@ -27,6 +28,11 @@ async def testdb() -> AsyncGenerator[Connection, None]:
         db.row_factory = Row
         await init_connection(db)
         yield db
+
+
+@pytest.fixture
+async def get_config(test_server: None) -> AsyncGenerator[AppConfig, None]:
+    return app.state.config
 
 
 @pytest.fixture

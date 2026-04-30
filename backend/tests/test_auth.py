@@ -1,6 +1,5 @@
 import pytest
 from aiosqlite import Connection
-from conftest import JWT_TEST_KEY, mangle_cookie
 from fastapi import FastAPI
 from fastapi.requests import Request
 from fastapi.testclient import TestClient
@@ -8,6 +7,7 @@ from fastapi.testclient import TestClient
 from api.auth import UserSchema, authorize, parse_cas_response
 from config import AppConfig
 from main import app
+from tests.conftest import JWT_TEST_KEY, mangle_cookie
 
 CAS_SUCCESS = """
 <cas:serviceResponse xmlns:cas='http://www.yale.edu/tp/cas'>
