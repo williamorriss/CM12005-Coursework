@@ -11,6 +11,8 @@ dependencies = [
     "aiosqlite>=0.20.0",
     "pyjwt[crypto]>=2.8.0",
     "python-dotenv>=1.0.0",
+    "numpy>=2.4.4",
+    "pillow>=12.2.0",
 ]
 
 [tool.ruff]
