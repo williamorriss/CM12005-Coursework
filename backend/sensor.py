@@ -1,8 +1,11 @@
 from asyncio import CancelledError, Task, create_task, sleep
 from asyncio.queues import Queue
+from contextlib import AbstractAsyncContextManager
 from datetime import datetime
 from random import randrange
-from typing import NamedTuple
+from typing import Callable, NamedTuple
+
+from aiosqlite import Connection
 
 from db import get_db_contextmanager
 
@@ -28,18 +31,34 @@ class SensorSystem:
     _instance: "SensorSystem | None" = None
     _active: dict[int, Task[None]]
     _listeners: dict[int, list[Queue[Sample]]]
+    _get_db: Callable[[], AbstractAsyncContextManager[Connection]]
+    _delay: float
 
-    def __new__(cls) -> "SensorSystem":
+    def __new__(
+        cls,
+        get_db: Callable[
+            [], AbstractAsyncContextManager[Connection]
+        ] = get_db_contextmanager,
+        delay: float = 10,
+    ) -> "SensorSystem":
         if cls._instance is None:
             cls._instance = super().__new__(cls)
 
         assert cls._instance is not None
         return cls._instance
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        get_db: Callable[
+            [], AbstractAsyncContextManager[Connection]
+        ] = get_db_contextmanager,
+        delay: float = 10,
+    ) -> None:
         if hasattr(self, "_active"):  # already initialised
             return
 
+        self._delay = delay
+        self._get_db = get_db
         self._active = {}
         self._listeners = {}
 
@@ -48,13 +67,13 @@ class SensorSystem:
 
     async def sense(self, sensor_id: int) -> None:
         print(f"{sensor_id} started sensing")
-        sensor = await SensorSystem._get_sensor(sensor_id)
         try:
+            sensor = await self._get_sensor(sensor_id)
             while True:
                 sample = fake_sample()
                 self._broadcast(sensor, sample)
-                await SensorSystem.write_sample(sensor, sample)
-                await sleep(10)
+                await self.write_sample(sensor, sample)
+                await sleep(self._delay)
         except CancelledError:
             print(f"{sensor_id} stopped")
             pass
@@ -63,21 +82,20 @@ class SensorSystem:
         for listeners in self._listeners[sensor.sensor_id]:
             listeners.put_nowait(sample)
 
-    @staticmethod
-    async def _get_sensor(sensor_id: int) -> Sensor:
-        async with get_db_contextmanager() as db:
+    async def _get_sensor(self, sensor_id: int) -> Sensor:
+        async with self._get_db() as db:
             async with db.execute(
                 "SELECT PlantID FROM Sensors WHERE ID = ?",
                 (sensor_id,),
             ) as cursor:
-                plant_id = None if (row := await cursor.fetchone()) is None else row[0]
+                row = await cursor.fetchone()
+                plant_id = row[0] if row else None
 
         return Sensor(sensor_id=sensor_id, plant_id=plant_id)
 
-    @staticmethod
-    async def write_sample(sensor: Sensor, sample: Sample) -> None:
+    async def write_sample(self, sensor: Sensor, sample: Sample) -> None:
         print(f"Inserting {sample} for sensor {sensor.sensor_id} ")
-        async with get_db_contextmanager() as db:
+        async with self._get_db() as db:
             await db.execute_insert(
                 """
                 INSERT INTO Logs (
@@ -115,7 +133,6 @@ class SensorSystem:
             raise Exception("Sensor already active")
 
         # activate sensor
-        self._listeners[sensor_id] = []
         task = create_task(self.sense(sensor_id))
         # make sure sensor errors actually appear
         task.add_done_callback(lambda task: task.result())

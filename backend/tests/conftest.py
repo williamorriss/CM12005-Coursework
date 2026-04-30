@@ -1,4 +1,5 @@
 import re
+from contextlib import asynccontextmanager
 from dataclasses import replace
 from typing import AsyncGenerator
 
@@ -28,6 +29,15 @@ async def testdb() -> AsyncGenerator[Connection, None]:
         db.row_factory = Row
         await init_connection(db)
         yield db
+
+
+@pytest.fixture
+def testdb_manager(testdb: Connection):
+    @asynccontextmanager
+    async def _manager() -> AsyncGenerator[Connection, None]:
+        yield testdb
+
+    return _manager
 
 
 @pytest.fixture

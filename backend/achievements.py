@@ -18,6 +18,7 @@ class AchievementCode(str, Enum):
 
     P1 = "P1"  # 1 Plant
     P10 = "P10"  # 10 Plants
+    DEV = "<dev>"
 
 
 class AchievementEvent(NamedTuple):
