@@ -9,6 +9,7 @@ from starlette.responses import JSONResponse
 from achievements import AchievementCode, AchievementEvent, AchievementSystem
 from api.auth import authorize
 from db import get_db
+from achievements import _plantcount_achievements
 
 router = APIRouter(prefix="/achievements")
 
@@ -32,7 +33,6 @@ class AchievementSchema(BaseModel):
             New AchievementSchema instance from event.
         """
         return AchievementSchema(code=event.code)
-
 
 @router.get(
     "/stream",
@@ -64,10 +64,26 @@ async def subscribe_achievements(
 async def test(
     user_id: int = Depends(authorize),
     achievements: AchievementSystem = Depends(AchievementSystem),
+    db: Connection = Depends(get_db),
 ) -> JSONResponse:
+    await _plantcount_achievements(db, user_id)
     achievements.send(user_id, AchievementEvent(AchievementCode.P10))
-    print("test achievement")
     return JSONResponse(content="posted", status_code=status.HTTP_200_OK)
+
+@router.get("", response_model=list[AchievementSchema])
+async def list_achievements(
+    user_id: int = Depends(authorize),
+    db: Connection = Depends(get_db),
+) -> list[AchievementSchema]:
+    rows = await db.execute_fetchall(
+        """
+        SELECT a.Code as Code FROM Awards a
+        INNER JOIN Achievements ac ON a.ID = ac.AwardID
+        WHERE ac.UserID = ?""",
+        (user_id,),
+    )
+
+    return [AchievementSchema(code=row["Code"]) for row in rows]
 
 
 @router.delete("")

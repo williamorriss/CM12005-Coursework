@@ -1,0 +1,23 @@
+#achievement li {
+  display: inline;
+  margin: 10px;
+}
+
+#achievements ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+
+#achievements {
+  position: relative;
+  margin: 50px;
+  width: 90%;
+  align-content: center;
+  border-style: solid;
+  border-radius: 15px;
+  border-width: 4px;
+  overflow-x: auto;
+  white-space: nowrap;
+}

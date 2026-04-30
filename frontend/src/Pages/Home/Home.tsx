@@ -7,8 +7,7 @@ import { api } from "../../api/api";
 import type { components } from "../../api/types"
 import AddPlantPopup from "../../AddPlantPopup";
 import type { Plant } from "src/api";
-
-
+import AchievementList from "./AchievementList";
 
 type PlantView = components["schemas"]["PlantView"];
 
@@ -73,6 +72,7 @@ function LoggedIn({logout, session, deleteUser, navigate} : LoginProps) : JSX.El
             {/* <AddPlantForm addPlant={addPlant} /> */}
 
             <Plants plants={plants} deletePlant={deletePlant} navigate={navigate} />
+            <AchievementList />
 
             <button onClick={() => navigate("/dev")}> dev </button>
 
