@@ -51,8 +51,13 @@ async def subscribe_achievements(
 ) -> AsyncIterable[AchievementSchema]:
     queue = achievements.create_listener(user_id)
     try:
+        print(f"SSE connected for user {user_id}")
+        yield AchievementSchema(code="mill ke")
+        print("yielded initial event")
         while True:
+            print("waiting on queue.get()")
             event = await queue.get()
+            print(f"got event: {event}")
             yield AchievementSchema.from_event(event)
     finally:
         achievements.remove_listener(user_id, queue)

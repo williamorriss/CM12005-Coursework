@@ -1,6 +1,7 @@
 from asyncio import Queue, QueueFull
+from contextlib import AbstractAsyncContextManager
 from enum import Enum
-from typing import NamedTuple
+from typing import Callable, NamedTuple
 
 from aiosqlite import Connection
 
@@ -35,11 +36,17 @@ class AchievementSystem:
     """
 
     _instance: "AchievementSystem | None" = None
+    _get_db: Callable[[], AbstractAsyncContextManager[Connection]]
 
     # maps user_id -> list of queues listening for that user's achievements
     _listeners: dict[int, list[Queue[AchievementEvent]]]
 
-    def __new__(cls) -> "AchievementSystem":
+    def __new__(
+        cls,
+        get_db: Callable[
+            [], AbstractAsyncContextManager[Connection]
+        ] = get_db_contextmanager,
+    ) -> "AchievementSystem":
         # checks if already initialised, if so, skips __init__ (very important!!!!!!!!!)
         if cls._instance is None:
             cls._instance = super().__new__(cls)
@@ -47,9 +54,15 @@ class AchievementSystem:
         assert cls._instance is not None
         return cls._instance
 
-    def __init__(self) -> None:
+    def __init__(
+        self,
+        get_db: Callable[
+            [], AbstractAsyncContextManager[Connection]
+        ] = get_db_contextmanager,
+    ) -> None:
         if hasattr(self, "_listeners"):  # already initialised
             return
+        self._get_db = get_db
         self._listeners = {}
 
     def create_listener(self, user_id: int) -> Queue[AchievementEvent]:
@@ -91,19 +104,17 @@ class AchievementSystem:
             except QueueFull:
                 print("queue overflow")
 
+    async def plant_achievements(self, user_id: int) -> None:
+        """
+        Convenience method to calculate whether this user has achieved any new
+        plant achievements
 
-async def plant_achievements(user_id: int) -> None:
-    """
-    Convenience method to calculate whether this user has achieved any new
-    plant achievements
-
-    Note:
-        Currently only checks plant count (e.g 1 plant etc) but can be expanded
-    """
-    achievements = AchievementSystem()
-    async with get_db_contextmanager() as db:
-        for event in await _plantcount_achievements(db, user_id):
-            achievements.send(user_id, event)
+        Note:
+            Currently only checks plant count (e.g 1 plant etc) but can be expanded
+        """
+        async with self._get_db() as db:
+            for event in await _plantcount_achievements(db, user_id):
+                self.send(user_id, event)
 
 
 async def _plantcount_achievements(

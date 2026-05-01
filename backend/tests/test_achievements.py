@@ -1,23 +1,39 @@
+from contextlib import AbstractAsyncContextManager
+from typing import Callable
+
+from aiosqlite import Connection
 from fastapi.testclient import TestClient
 
 from achievements import AchievementCode, AchievementEvent, AchievementSystem
-from api.achievements import AchievementSchema
 from main import app
 from tests.conftest import mangle_cookie
 
 
-def test_ping(test_server: None) -> None:
-    achievements = AchievementSystem()
+async def test_first_plant_achievement(
+    testdb: Connection,
+    test_server: None,
+    testdb_manager: Callable[[], AbstractAsyncContextManager[Connection, None]],
+) -> None:
+    achievements = AchievementSystem(get_db=testdb_manager)
+    # would be better to do directly with streaming but awaiting the queue in subscribe
+    # brings fastapi to its knees. Should be fine as the actual streaming part is
+    # reliable (when consumer seperate from producer -_-)
+
+    await testdb.execute("INSERT INTO Users (ID, Username) VALUES (1, 'Eve')")
+    await testdb.commit()
+
+    q = achievements.create_listener(1)
     client = TestClient(app)
     client.cookies.set("auth-token", mangle_cookie(1))
 
-    with client.stream("GET", "/stream") as stream:
-        achievements.send(1, AchievementEvent(code=AchievementCode.DEV))
-        for line in stream.iter_lines():
-            if line.startswith("data:"):
-                event = AchievementSchema.model_validate_json(line[5:].strip())
-                assert event.code == str(AchievementCode.DEV)
-                stream.close()
+    response = client.post(
+        "/api/plants",
+        data={"name": "Adam"},
+    )
+    assert response.is_success
+
+    event = await q.get()
+    assert event.code == AchievementCode.P1
 
 
 def test_listener() -> None:

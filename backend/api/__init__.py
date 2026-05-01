@@ -10,12 +10,12 @@ __all__ = ["router"]
 
 from fastapi import APIRouter
 
+from .achievements import router as achievements_router
 from .auth import router as auth_router
 from .logs import router as logs_router
 from .notes import router as notes_router
 from .plants import router as plants_router
 from .sensors import router as sensors_router
-from .achievements import router as achievements_router
 
 router = APIRouter(
     prefix="/api",

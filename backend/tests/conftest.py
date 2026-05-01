@@ -1,16 +1,18 @@
 import re
-from contextlib import asynccontextmanager
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from dataclasses import replace
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Callable
 
 import pytest
 from aiosqlite import Connection, Row, connect
 from fastapi.responses import Response
 
+from achievements import AchievementSystem
 from api.auth import set_auth_cookie
 from config import AppConfig
 from db import get_db, init_connection
 from main import app
+from sensor import SensorSystem
 
 JWT_TEST_KEY = "testkeytestkeytestkeytestkeytestkeytestkeytestkey"
 
@@ -31,13 +33,27 @@ async def testdb() -> AsyncGenerator[Connection, None]:
         yield db
 
 
+@pytest.fixture(autouse=True)
+def _system(testdb_manager: Callable[[], AbstractAsyncContextManager[Connection]]):
+    print("systems changed")
+    SensorSystem(get_db=testdb_manager)
+    AchievementSystem(get_db=testdb_manager)
+
+
 @pytest.fixture
-def testdb_manager(testdb: Connection):
+def testdb_manager(
+    testdb: Connection,
+) -> Callable[[], AbstractAsyncContextManager[Connection]]:
     @asynccontextmanager
     async def _manager() -> AsyncGenerator[Connection, None]:
         yield testdb
 
     return _manager
+
+
+@pytest.fixture(scope="session")
+def anyio_backend():
+    return "asyncio"
 
 
 @pytest.fixture

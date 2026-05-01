@@ -71,8 +71,8 @@ class SensorSystem:
             sensor = await self._get_sensor(sensor_id)
             while True:
                 sample = fake_sample()
-                self._broadcast(sensor, sample)
                 await self.write_sample(sensor, sample)
+                self._broadcast(sensor, sample)
                 await sleep(self._delay)
         except CancelledError:
             print(f"{sensor_id} stopped")
@@ -132,6 +132,8 @@ class SensorSystem:
         if sensor_id in self._active:
             raise Exception("Sensor already active")
 
+        if sensor_id not in self._listeners:
+            self._listeners[sensor_id] = []
         # activate sensor
         task = create_task(self.sense(sensor_id))
         # make sure sensor errors actually appear

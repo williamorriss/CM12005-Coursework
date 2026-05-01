@@ -12,7 +12,7 @@ from fastapi import (
 from pydantic import BaseModel
 from starlette.responses import Response
 
-from achievements import plant_achievements
+from achievements import AchievementSystem
 from api.auth import authorize
 from config import AppConfig, get_config
 from db import delete_image, get_db, make_static_url, owns_plant
@@ -76,6 +76,7 @@ async def add_plant(
     user_id: int = Depends(authorize),
     config: AppConfig = Depends(get_config),
     db: Connection = Depends(get_db),
+    achievements: AchievementSystem = Depends(AchievementSystem),
 ) -> PlantSchema:
     image_id: int | None = None
     url: str | None = None
@@ -103,7 +104,7 @@ async def add_plant(
 
     await db.commit()
     background_tasks.add_task(
-        plant_achievements, user_id
+        achievements.plant_achievements, user_id
     )  # use background task just in case achievements become slower
     return PlantSchema(id=plant_id, name=name, image_url=url)
 
